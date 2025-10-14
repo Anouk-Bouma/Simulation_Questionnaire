@@ -1,0 +1,119 @@
+---
+title: "analysis_script"
+format: html
+editor: visual
+---
+
+## Version Control
+
+```{r}
+renv::restore()
+
+library(tidyr)
+library(dplyr)
+library(readxl)
+library(ggplot2)
+```
+
+## Data cleaning
+
+This part is only done once when the final dataset is ready. The output is then saved so the RData file can be used for any further analyses. Later on it is maybe better to put the data cleaning part in a separate script.
+
+```{r}
+
+### Loading the data into R 
+data <- read_excel("simulation_survey_testdata.xlsx")
+
+# Removing irrelevant and identifying columns:
+# StartDate, EndDate, Status, RecordedDate, ResponseId, DistributionChannel
+# UserLanguage
+data <- data %>% select(-StartDate, -EndDate, -Status, -RecordedDate, 
+                        -ResponseId, -DistributionChannel, -UserLanguage)
+# Removing the first row as this contains a second header instead of data
+data <- data[-1,]
+
+# Changing text inputs to values
+data[150,6] <- "7"
+data[160,6] <- "6"
+data$Q1 <- as.numeric(data$Q1)
+```
+
+## Variable combining
+
+```{r}
+
+## Creating the variable 'new_method' that indicates if one of the authors has been involved in developing one or multiple methods that are part of their paper
+
+data <- data %>%
+  mutate(new_method = case_when(Q2 == "1.0" | 
+                                Q2 == "2.0" | 
+                                Q3 == "1.0" ~ 1, 
+                                .default = 0))
+
+  
+```
+
+## Plotting
+
+For every question, there have to be the following plots:
+
+-   Frequencies overall
+
+-   Frequencies split over neutral/non-neutral
+
+```{r}
+
+# Make plot base for all plots here?
+# plot_base <- 
+
+
+#### Question 4: Project Tasks ####
+## Complete sample ##
+
+# Select columns to include
+Q4_select <- data %>%
+  select(Q4_1, Q4_2, Q4_3, Q4_4, Q4_5)
+
+# Pivot to long format
+Q4_long <- Q4_select %>%
+  pivot_longer(cols = everything(),
+               names_to = "question",
+               values_to = "selected")
+
+# Plot barplot
+ggplot(Q4_long, aes(question, fill = factor(selected))) +
+  geom_bar(position = position_dodge(preserve = "single")) +
+  scale_fill_manual(labels = c("0" = "Didn't select", "1" = "Selected"), values = c("0" = "red", "1" = "blue"))
+
+## Filtered on New Method ##
+Q4_newmethod <- data %>%
+  filter(new_method == 1) %>%
+  select(Q4_1, Q4_2, Q4_3, Q4_4, Q4_5)
+
+# Pivot to longer format
+Q4_long_newmethod <- Q4_newmethod %>%
+  pivot_longer(cols = everything(),
+               names_to = "question",
+               values_to = "selected")
+
+ggplot(Q4_long_newmethod, aes(question, fill = factor(selected))) +
+  geom_bar(position = position_dodge(preserve = "single")) +
+  scale_fill_manual(labels = c("0" = "Didn't select", "1" = "Selected"), values = c("0" = "red", "1" = "blue"))
+
+
+## Filtered neutral (new_method = 0)
+Q4_neutral <- data %>%
+  filter(new_method == 0) %>%
+  select(Q4_1, Q4_2, Q4_3, Q4_4, Q4_5)
+
+# Pivot to longer format
+Q4_long_neutral <- Q4_neutral %>%
+  pivot_longer(cols = everything(),
+               names_to = "question",
+               values_to = "selected")
+
+ggplot(Q4_long_neutral, aes(question, fill = factor(selected))) +
+  geom_bar(position = position_dodge(preserve = "single")) +
+  scale_fill_manual(labels = c("0" = "Didn't select", "1" = "Selected"), values = c("0" = "red", "1" = "blue"))
+
+```
