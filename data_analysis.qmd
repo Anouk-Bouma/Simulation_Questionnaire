@@ -63,6 +63,62 @@ For every question, there have to be the following plots:
 
 ```{r}
 
+# Vectors for questions
+question_4 <- c("Q4_1", "Q4_2", "Q4_3", "Q4_4", "Q4_5")
+question_7a <- c("Q7a_1", "Q7a_2", "Q7a_3", "Q7a_4", "Q7a_5", "Q7a_6", "Q7a_7", "Q7a_8", "Q7a_9", "Q7a_10", "Q7a_11", "Q7a_12")
+
+# Subsets of dataset (can also be done inside the plotting part itself)
+data_newmethod <- data %>%
+  filter(new_method ==1)
+
+# Problem here is that the NA values are kept in the plot
+ggplot(pivot_longer(data = data, 
+                    cols = question_7a, # this gives a warning but does work. Maybe check for an alternative
+                    names_to = "question",
+                    values_to = "selected"), 
+                    aes(question, fill = factor(selected))) +
+  geom_bar()
+
+
+# This way the NA values are removed
+# Plot for the entire dataset
+data %>%
+  pivot_longer(
+    cols = question_7a,
+    names_to = "question",
+    values_to = "selected"
+  ) %>%
+  filter(!is.na(selected)) %>%
+  ggplot(aes(x = question, fill = factor(selected))) +
+  geom_bar()
+
+# Plot for the data for only new method = true
+data %>%
+  filter(new_method == 1) %>%
+  pivot_longer(
+    cols = question_7a,
+    names_to = "question",
+    values_to = "selected"
+  ) %>%
+  filter(!is.na(selected)) %>%
+  ggplot(aes(x = question, fill = factor(selected))) +
+  geom_bar()
+
+
+# To do for these plots:
+# - Make sure the axes are comparable
+# - Make it laying down
+# - Add value labels
+# - Only the yes should be indicated
+# - Update the legend
+
+
+```
+
+## Old Scraps that are not needed anymore
+
+```{r}
+
 # Make plot base for all plots here?
 # plot_base <- 
 
