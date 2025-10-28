@@ -14,6 +14,8 @@ library(dplyr)
 library(readxl)
 library(ggplot2)
 library(stringr)
+library(purrr)
+library(writexl)
 ```
 
 ## Data cleaning
@@ -23,7 +25,7 @@ This part is only done once when the final dataset is ready. The output is then 
 ```{r}
 
 ### Loading the data into R 
-data <- read_excel("simulation_survey_testdata.xlsx")
+data <- read_excel("simulation_survey_data.xlsx")
 
 # Removing irrelevant and identifying columns:
 # StartDate, EndDate, Status, RecordedDate, ResponseId, DistributionChannel
@@ -33,10 +35,83 @@ data <- data %>% select(-StartDate, -EndDate, -Status, -RecordedDate,
 # Removing the first row as this contains a second header instead of data
 data <- data[-1,]
 
+
+
+
 # Changing text inputs to values
-data[150,6] <- "7"
-data[160,6] <- "6"
-data$Q1 <- as.numeric(data$Q1)
+#data[150,6] <- "7"
+#data[160,6] <- "6"
+#data$Q1 <- as.numeric(data$Q1)
+```
+
+## More data cleaning
+
+Steps to take for data cleaning:
+
+-   Exclude everyone that did not fill out at least one content question = response rate after that
+
+-   Check aims question open answers if they should be excluded
+
+-   Check open answers last question if there should be exclusions (partly or as a whole)
+
+-   Change the answers of the dude that emailed
+
+-   Make sure all numerical values are numbers (research experience) (if you are unsure make them missing, check with supervisors)
+
+-   Check for slider check question to make next answers missings
+
+-   Check for impossible combinations
+
+```{r}
+## Exclude everyone that did not fill out any content-related question (Q5 and further)
+
+# Step 1: select all columns from 15 onward (which is column where Q5 is in)
+cols_from_15 <- select(data, 15:ncol(data))
+
+# Step 2: filter rows where not all selected columns are NA or -99
+data_filtered <- data %>%
+  filter(rowSums(is.na(cols_from_15) | cols_from_15 == '-99') < ncol(cols_from_15))
+
+# Response rate after this is N = 224/692 = 32.4% 
+
+# add an ID variable to the dataset
+data_filtered <- data_filtered %>%
+  mutate(ID = paste0("id", row_number()))
+
+
+# Remove those participants for which an aim was entered in Q2 that does not fit the inclusion criteria
+
+
+
+```
+
+## Evaluating text results
+
+In this block I will extract all textual results that need to be evaluated to decide what to do with them.
+
+```{r}
+
+# Define the text columns you want to extract
+text_cols <- c("Q7a_12_TEXT", "Q7b_12_TEXT", 
+               "Q10a_12_TEXT", "Q10b_12_TEXT", 
+               "Q13a_12_TEXT", "Q13b_12_TEXT",
+               "Q16a_15_TEXT", "Q16b_15_TEXT",
+               "Q18a_10_TEXT", "Q18b_9_TEXT",
+               "Q19_6_TEXT", "Q20_8_TEXT",
+               "Q22_11_TEXT", "Q23_5_TEXT",
+               "Q24_13_TEXT", "Q25_12_TEXT",
+               "Q30")
+
+# Create a named list of tibbles
+text_list <- map(text_cols, function(col) {
+  data_filtered %>%
+    filter(.data[[col]] != "-99", !is.na(.data[[col]])) %>%
+    select(ID, text = all_of(col))
+}) %>%
+  set_names(text_cols)
+
+# Write to Excel with one sheet per column
+write_xlsx(text_list, "text_responses.xlsx")
 ```
 
 ## Variable combining
