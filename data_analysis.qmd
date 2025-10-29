@@ -92,7 +92,7 @@ In this block I will extract all textual results that need to be evaluated to de
 ```{r}
 
 # Define the text columns you want to extract
-text_cols <- c("Q7a_12_TEXT", "Q7b_12_TEXT", 
+text_cols <- c("Q2_4_TEXT", "Q7a_12_TEXT", "Q7b_12_TEXT", 
                "Q10a_12_TEXT", "Q10b_12_TEXT", 
                "Q13a_12_TEXT", "Q13b_12_TEXT",
                "Q16a_15_TEXT", "Q16b_15_TEXT",
