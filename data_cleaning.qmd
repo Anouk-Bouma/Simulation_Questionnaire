@@ -53,6 +53,15 @@ data_filtered <- data %>%
 data_filtered <- data_filtered %>%
   mutate(ID = paste0("id", row_number())) %>%
   relocate(ID)
+
+####
+# Change columns with values into type numeric
+data <- data %>%
+  mutate(across(
+    where(~ is.character(.) &&
+            all(str_detect(., "^\\d+$") | is.na(.))),
+    as.numeric
+  ))
 ```
 
 ## Save intermediate dataset to continue with
@@ -120,15 +129,6 @@ load("survey_intermediate_datafile.RData")
 
 ####
 # Slider check
-
-#### 
-# Other cleaning steps: make numerical values of numeric type
-data <- data %>%
-  mutate(across(
-    where(~ is.character(.) &&
-            all(str_detect(., "^\\d+$") | is.na(.))),
-    as.numeric
-  ))
 ```
 
 ## Variable combining
