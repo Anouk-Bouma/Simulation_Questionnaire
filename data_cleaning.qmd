@@ -1,0 +1,293 @@
+---
+title: "analysis_script"
+format: html
+editor: visual
+---
+
+## Version Control
+
+```{r}
+renv::restore()
+
+library(tidyr)
+library(dplyr)
+library(readxl)
+library(ggplot2)
+library(stringr)
+library(purrr)
+library(writexl)
+library(openxlsx)
+```
+
+## Data cleaning
+
+This part is only done once when the final dataset is ready. The output is then saved so the RData file can be used for any further analyses. Later on it is maybe better to put the data cleaning part in a separate script.
+
+```{r}
+
+### Loading the data into R 
+data <- read_excel("simulation_survey_data.xlsx")
+
+# Removing irrelevant and identifying columns:
+# StartDate, EndDate, Status, RecordedDate, ResponseId, DistributionChannel
+# UserLanguage
+data <- data %>% select(-StartDate, -EndDate, -Status, -RecordedDate, 
+                        -ResponseId, -DistributionChannel, -UserLanguage)
+# Removing the first row as this contains a second header instead of data
+data <- data[-1,]
+```
+
+## More data cleaning
+
+Steps to take for data cleaning:
+
+-   Exclude everyone that did not fill out at least one content question = response rate after that **CHECK**
+
+-   Check aims question open answers if they should be excluded
+
+-   Check open answers last question if there should be exclusions (partly or as a whole)
+
+-   Check open answers to other questions to see if there should be something done with them
+
+-   Check for slider check question to make next answers missings
+
+-   Check for impossible combinations
+
+```{r}
+
+####
+## Exclude everyone that did not fill out any content-related question (Q5 and further)
+
+# Step 1: select all columns from 15 onward (which is column where Q5 is in)
+cols_from_15 <- select(data, 15:ncol(data))
+
+# Step 2: only keep participants that have data for at least one of those selected columns (i.e, select all rows where not all selected columns are NA or -99)
+data_filtered <- data %>%
+  filter(rowSums(is.na(cols_from_15) | cols_from_15 == '-99') < ncol(cols_from_15))
+# Response rate after this is N = 224/692 = 32.4% 
+
+####
+## Add an ID variable to the dataset
+data_filtered <- data_filtered %>%
+  mutate(ID = paste0("id", row_number())) %>%
+  relocate(ID)
+```
+
+## Save intermediate dataset to continue with
+
+```{r}
+
+# Save data as Rdata file
+save(data_filtered, file = "survey_intermediate_datafile.RData")
+
+# Save data as Excel file
+write.xlsx(data_filtered, file = "survey_intermediate_datafile.xlsx")
+```
+
+## Evaluating text results
+
+In this block I will extract all textual results that need to be evaluated to decide what to do with them. The previously saved dataset can be useful to open when evaluating textual data because evaluating what to do with open answers might depend on other answers given by the same participant.
+
+```{r}
+
+# Define the text columns you want to extract
+text_cols <- c("Q2_4_TEXT", "Q7a_12_TEXT", "Q7b_12_TEXT", 
+               "Q10a_12_TEXT", "Q10b_12_TEXT", 
+               "Q13a_12_TEXT", "Q13b_12_TEXT",
+               "Q16a_15_TEXT", "Q16b_15_TEXT",
+               "Q18a_10_TEXT", "Q18b_9_TEXT",
+               "Q19_6_TEXT", "Q20_8_TEXT",
+               "Q22_11_TEXT", "Q23_5_TEXT",
+               "Q24_13_TEXT", "Q25_12_TEXT",
+               "Q30")
+
+# Create a named list of tibbles
+text_list <- map(text_cols, function(col) {
+  data_filtered %>%
+    filter(.data[[col]] != "-99", !is.na(.data[[col]])) %>%
+    select(ID, text = all_of(col))
+}) %>%
+  set_names(text_cols)
+
+# Write to Excel with one sheet per column
+write_xlsx(text_list, "text_responses.xlsx")
+```
+
+## Data Cleaning following evaluation of textual results
+
+```{r}
+
+####
+# Remove those participants for which an aim was entered in Q2 that does not fit the inclusion criteria
+
+####
+# Changes in individual answers based on open answer options
+
+####
+# Impossible combinations
+
+####
+# Slider check
+
+```
+
+## Variable combining
+
+```{r}
+
+## Creating the variable 'new_method' that indicates if one of the authors has been involved in developing one or multiple methods that are part of their paper
+
+data <- data %>%
+  mutate(new_method = case_when(Q2 == "1.0" | 
+                                Q2 == "2.0" | 
+                                Q3 == "1.0" ~ 1, 
+                                .default = 0))
+```
+
+## Save final dataset after all cleaning steps are done
+
+```{r}
+
+```
+
+## Plotting
+
+For every question, there have to be the following plots:
+
+-   Frequencies overall
+
+-   Frequencies split over neutral/non-neutral
+
+```{r}
+
+# Vectors for questions
+question_4 <- c("Q4_1", "Q4_2", "Q4_3", "Q4_4", "Q4_5")
+question_7a <- c("Q7a_1", "Q7a_2", "Q7a_3", "Q7a_4", "Q7a_5", "Q7a_6", "Q7a_7", "Q7a_8", "Q7a_9", "Q7a_10", "Q7a_11", "Q7a_12")
+
+
+# answer options
+a_Q7a <- c(
+  "… adhere to journal requirements (e.g., maximum number of words/tables/figures)", 
+  "… improve the readability of the paper", 
+  "… increase the chance of publication (e.g., report results likely to be of interest to editor/reviewers)", 
+  "… implement suggestions from an editor or peer-reviewer", 
+  "… focus on the most relevant results", 
+  "… focus on statistically significant results", 
+  "… focus on unexpected results", 
+  "… focus on results that aligned with the paper’s main conclusions", 
+  "… focus on results that show when a method ‘breaks’", 
+  "… focus on results that illustrate the strengths of a specific method",
+  "… focus on results for the best-performing method", 
+  "Other, please specify [open-ended]"
+)
+
+
+
+# This way the NA values are removed
+# Plot for the entire dataset
+data %>%
+  pivot_longer(
+    cols = question_7a,
+    names_to = "question",
+    values_to = "selected"
+  ) %>%
+  filter(selected == 1) %>%
+  mutate(question = factor(question, levels = question_7a)) %>% # fix the order so it is not on alfabetical order but order of answers
+  ggplot(aes(x = question)) +
+  geom_bar(fill = "steelblue") +
+  coord_flip() +
+  geom_text(stat = "count", aes(label = after_stat(count)), 
+            hjust = -0.1, size = 3) +
+  scale_x_discrete(labels = str_wrap(a_Q7a, width = 55)) +
+  theme_classic() # try some other things
+
+# Plot for the data for only new method = true
+data %>%
+  filter(new_method == 1) %>%
+  pivot_longer(
+    cols = question_7a,
+    names_to = "question",
+    values_to = "selected"
+  ) %>%
+  filter(selected == 1) %>%
+  mutate(question = factor(question, levels = question_7a)) %>%
+  ggplot(aes(x = question)) +
+  geom_bar(fill = "steelblue") + 
+  coord_flip() +
+  geom_text(stat = "count", aes(label = after_stat(count)), 
+            hjust = -0.1, size = 3) +
+  scale_x_discrete(labels = str_wrap(a_Q7a, width = 55)) +
+  theme_classic()
+
+
+
+ggsave("barplotnew.png", width = 10, height = 6, dpi = 300)
+
+# To do for these plots:
+# - Make sure the axes are comparable
+# - Make it laying down
+# - Add value labels -> top down
+# - Only the yes should be indicated
+# maybe percentages for better comparisons between groups? or plot them both in the same plot?
+
+
+```
+
+## Old Scraps that are not needed anymore
+
+```{r}
+
+# Make plot base for all plots here?
+# plot_base <- 
+
+
+#### Question 4: Project Tasks ####
+## Complete sample ##
+
+# Select columns to include
+Q4_select <- data %>%
+  select(Q4_1, Q4_2, Q4_3, Q4_4, Q4_5)
+
+# Pivot to long format
+Q4_long <- Q4_select %>%
+  pivot_longer(cols = everything(),
+               names_to = "question",
+               values_to = "selected")
+
+# Plot barplot
+ggplot(Q4_long, aes(question, fill = factor(selected))) +
+  geom_bar(position = position_dodge(preserve = "single")) +
+  scale_fill_manual(labels = c("0" = "Didn't select", "1" = "Selected"), values = c("0" = "red", "1" = "blue"))
+
+## Filtered on New Method ##
+Q4_newmethod <- data %>%
+  filter(new_method == 1) %>%
+  select(Q4_1, Q4_2, Q4_3, Q4_4, Q4_5)
+
+# Pivot to longer format
+Q4_long_newmethod <- Q4_newmethod %>%
+  pivot_longer(cols = everything(),
+               names_to = "question",
+               values_to = "selected")
+
+ggplot(Q4_long_newmethod, aes(question, fill = factor(selected))) +
+  geom_bar(position = position_dodge(preserve = "single")) +
+  scale_fill_manual(labels = c("0" = "Didn't select", "1" = "Selected"), values = c("0" = "red", "1" = "blue"))
+
+
+## Filtered neutral (new_method = 0)
+Q4_neutral <- data %>%
+  filter(new_method == 0) %>%
+  select(Q4_1, Q4_2, Q4_3, Q4_4, Q4_5)
+
+# Pivot to longer format
+Q4_long_neutral <- Q4_neutral %>%
+  pivot_longer(cols = everything(),
+               names_to = "question",
+               values_to = "selected")
+
+ggplot(Q4_long_neutral, aes(question, fill = factor(selected))) +
+  geom_bar(position = position_dodge(preserve = "single")) +
+  scale_fill_manual(labels = c("0" = "Didn't select", "1" = "Selected"), values = c("0" = "red", "1" = "blue"))
+
+```
