@@ -19,12 +19,9 @@ library(writexl)
 library(openxlsx)
 ```
 
-## Data cleaning
-
-This part is only done once when the final dataset is ready. The output is then saved so the RData file can be used for any further analyses. Later on it is maybe better to put the data cleaning part in a separate script.
+## Initial simple data cleaning
 
 ```{r}
-
 ### Loading the data into R 
 data <- read_excel("simulation_survey_data.xlsx")
 
@@ -37,24 +34,9 @@ data <- data %>% select(-StartDate, -EndDate, -Status, -RecordedDate,
 data <- data[-1,]
 ```
 
-## More data cleaning
-
-Steps to take for data cleaning:
-
--   Exclude everyone that did not fill out at least one content question = response rate after that **CHECK**
-
--   Check aims question open answers if they should be excluded
-
--   Check open answers last question if there should be exclusions (partly or as a whole)
-
--   Check open answers to other questions to see if there should be something done with them
-
--   Check for slider check question to make next answers missings
-
--   Check for impossible combinations
+## Participant-specific simple data cleaning
 
 ```{r}
-
 ####
 ## Exclude everyone that did not fill out any content-related question (Q5 and further)
 
@@ -86,7 +68,7 @@ write.xlsx(data_filtered, file = "survey_intermediate_datafile.xlsx")
 
 ## Evaluating text results
 
-In this block I will extract all textual results that need to be evaluated to decide what to do with them. The previously saved dataset can be useful to open when evaluating textual data because evaluating what to do with open answers might depend on other answers given by the same participant.
+In this block we will extract all textual results that need to be evaluated to decide what to do with them. The previously saved dataset can be useful to open when evaluating textual data because evaluating what to do with open answers might depend on other answers given by the same participant.
 
 ```{r}
 
@@ -129,6 +111,9 @@ write_xlsx(text_list, "text_responses.xlsx")
 ####
 # Slider check
 
+#### 
+# Other cleaning steps: make numerical values of numeric type
+
 ```
 
 ## Variable combining
@@ -149,5 +134,3 @@ data <- data %>%
 ```{r}
 
 ```
-
-
