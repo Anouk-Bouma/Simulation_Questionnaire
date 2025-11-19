@@ -16,6 +16,7 @@ library(ggplot2)
 library(stringr)
 library(purrr)
 library(writexl)
+library(openxlsx)
 ```
 
 ## Data cleaning
@@ -68,18 +69,24 @@ data_filtered <- data %>%
 ####
 ## Add an ID variable to the dataset
 data_filtered <- data_filtered %>%
-  mutate(ID = paste0("id", row_number()))
+  mutate(ID = paste0("id", row_number())) %>%
+  relocate(ID)
+```
 
+## Save intermediate dataset to continue with
 
-# Remove those participants for which an aim was entered in Q2 that does not fit the inclusion criteria
-#write.csv(data_filtered, file = "data.csv")
+```{r}
 
+# Save data as Rdata file
+save(data_filtered, file = "survey_intermediate_datafile.RData")
 
+# Save data as Excel file
+write.xlsx(data_filtered, file = "survey_intermediate_datafile.xlsx")
 ```
 
 ## Evaluating text results
 
-In this block I will extract all textual results that need to be evaluated to decide what to do with them.
+In this block I will extract all textual results that need to be evaluated to decide what to do with them. The previously saved dataset can be useful to open when evaluating textual data because evaluating what to do with open answers might depend on other answers given by the same participant.
 
 ```{r}
 
@@ -104,6 +111,24 @@ text_list <- map(text_cols, function(col) {
 
 # Write to Excel with one sheet per column
 write_xlsx(text_list, "text_responses.xlsx")
+```
+
+## Data Cleaning following evaluation of textual results
+
+```{r}
+
+####
+# Remove those participants for which an aim was entered in Q2 that does not fit the inclusion criteria
+
+####
+# Changes in individual answers based on open answer options
+
+####
+# Impossible combinations
+
+####
+# Slider check
+
 ```
 
 ## Variable combining
