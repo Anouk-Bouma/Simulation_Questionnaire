@@ -59,7 +59,7 @@ data_filtered <- data_filtered %>%
 data_filtered <- data_filtered %>%
   mutate(across(
     where(~ is.character(.) &&
-            all(str_detect(., "^\\d+$") | is.na(.))),
+            all(str_detect(., "^\\d+$") | is.na(.) | str_detect(., "-99"))),
     as.numeric
   ))
 ```
