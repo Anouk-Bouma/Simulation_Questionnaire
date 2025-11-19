@@ -59,11 +59,13 @@ data_filtered <- data_filtered %>%
 
 ```{r}
 
+data <- data_filtered
+
 # Save data as Rdata file
-save(data_filtered, file = "survey_intermediate_datafile.RData")
+save(data, file = "survey_intermediate_datafile.RData")
 
 # Save data as Excel file
-write.xlsx(data_filtered, file = "survey_intermediate_datafile.xlsx")
+write.xlsx(data, file = "survey_intermediate_datafile.xlsx")
 ```
 
 ## Evaluating text results
@@ -93,6 +95,14 @@ text_list <- map(text_cols, function(col) {
 
 # Write to Excel with one sheet per column
 write_xlsx(text_list, "text_responses.xlsx")
+```
+
+## Load intermediate dataset to work with
+
+```{r}
+
+# Load the partly cleaned data here
+load("survey_intermediate_datafile.RData")
 ```
 
 ## Data Cleaning following evaluation of textual results

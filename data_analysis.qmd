@@ -23,8 +23,8 @@ library(openxlsx)
 
 ```{r}
 
-# Load the cleaned data here CHANGE ONCE ALL CLEANING IS DONE
-data <- load("survey_intermediate_datafile.RData")
+# Load the cleaned data here CHANGE ONCE ALL CLEANING IS DON
+load("survey_intermediate_datafile.RData")
 ```
 
 ## Plotting
