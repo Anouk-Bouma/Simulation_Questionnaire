@@ -123,7 +123,12 @@ load("survey_intermediate_datafile.RData")
 
 #### 
 # Other cleaning steps: make numerical values of numeric type
-
+data <- data %>%
+  mutate(across(
+    where(~ is.character(.) &&
+            all(str_detect(., "^\\d+$") | is.na(.))),
+    as.numeric
+  ))
 ```
 
 ## Variable combining
