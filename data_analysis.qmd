@@ -34,53 +34,45 @@ data <- data %>% select(-StartDate, -EndDate, -Status, -RecordedDate,
                         -ResponseId, -DistributionChannel, -UserLanguage)
 # Removing the first row as this contains a second header instead of data
 data <- data[-1,]
-
-
-
-
-# Changing text inputs to values
-#data[150,6] <- "7"
-#data[160,6] <- "6"
-#data$Q1 <- as.numeric(data$Q1)
 ```
 
 ## More data cleaning
 
 Steps to take for data cleaning:
 
--   Exclude everyone that did not fill out at least one content question = response rate after that
+-   Exclude everyone that did not fill out at least one content question = response rate after that **CHECK**
 
 -   Check aims question open answers if they should be excluded
 
 -   Check open answers last question if there should be exclusions (partly or as a whole)
 
--   Change the answers of the dude that emailed
-
--   Make sure all numerical values are numbers (research experience) (if you are unsure make them missing, check with supervisors)
+-   Check open answers to other questions to see if there should be something done with them
 
 -   Check for slider check question to make next answers missings
 
 -   Check for impossible combinations
 
 ```{r}
+
+####
 ## Exclude everyone that did not fill out any content-related question (Q5 and further)
 
 # Step 1: select all columns from 15 onward (which is column where Q5 is in)
 cols_from_15 <- select(data, 15:ncol(data))
 
-# Step 2: filter rows where not all selected columns are NA or -99
+# Step 2: only keep participants that have data for at least one of those selected columns (i.e, select all rows where not all selected columns are NA or -99)
 data_filtered <- data %>%
   filter(rowSums(is.na(cols_from_15) | cols_from_15 == '-99') < ncol(cols_from_15))
-
 # Response rate after this is N = 224/692 = 32.4% 
 
-# add an ID variable to the dataset
+####
+## Add an ID variable to the dataset
 data_filtered <- data_filtered %>%
   mutate(ID = paste0("id", row_number()))
 
 
 # Remove those participants for which an aim was entered in Q2 that does not fit the inclusion criteria
-
+#write.csv(data_filtered, file = "data.csv")
 
 
 ```
