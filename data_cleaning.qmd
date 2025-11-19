@@ -142,8 +142,12 @@ data <- data %>%
                                 Q2 == "2.0" | 
                                 Q3 == "1.0" ~ 1, 
                                 .default = 0))
+```
 
-  
+## Save final dataset after all cleaning steps are done
+
+```{r}
+
 ```
 
 ## Plotting
