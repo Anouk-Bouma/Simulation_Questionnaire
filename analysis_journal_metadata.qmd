@@ -20,3 +20,26 @@ library(purrr)
 library(writexl)
 library(openxlsx)
 ```
+
+### Loading the data
+
+Loading the files containing the metadata and inclusion decisions per article.
+
+```{r}
+
+###
+# loading the data files
+data_all_articles  <- read.xlsx(
+  "all_articles_2023_2024_finaldecisions.xlsx", 
+  sheet = "All")
+
+data_included_articles <- read.xlsx(
+  "all_articles_2023_2024_finaldecisions.xlsx",
+  sheet = "Final mailinglist")
+```
+
+## Descriptives journal/inclusion data
+
+```{r}
+
+```
