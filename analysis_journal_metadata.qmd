@@ -3,3 +3,20 @@ title: "analysis_journal_metadata"
 format: html
 editor: visual
 ---
+
+<!--# Hey bestie, before submitting the final version -> ctrl + f: 'NOTE' to check if all notes are evaluated and removed -->
+
+## Version Control
+
+```{r}
+renv::restore()
+
+library(tidyr)
+library(dplyr)
+library(readxl)
+library(ggplot2)
+library(stringr)
+library(purrr)
+library(writexl)
+library(openxlsx)
+```
