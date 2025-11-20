@@ -4,6 +4,8 @@ format: html
 editor: visual
 ---
 
+<!--# Hey bestie, before submitting the final version -> ctrl + f: 'NOTE' to check if all notes are evaluated and removed -->
+
 ## Version Control
 
 ```{r}
@@ -46,7 +48,12 @@ cols_from_15 <- select(data, 15:ncol(data))
 # Step 2: only keep participants that have data for at least one of those selected columns (i.e, select all rows where not all selected columns are NA or -99)
 data_filtered <- data %>%
   filter(rowSums(is.na(cols_from_15) | cols_from_15 == '-99') < ncol(cols_from_15))
-# Response rate after this is N = 224/692 = 32.4% 
+
+#### (NOTE: might want to move this part to descriptives + calculate full vs partial responses)
+# Calculate reponse rate
+n_invitations <- 695
+n_participants <- 224
+response_rate <- n_participants/n_invitations # = 0.3223
 
 ####
 ## Add an ID variable to the dataset
