@@ -51,8 +51,17 @@ summary_table <- data_all_articles %>%
     percentage = round((included/total)*100, digits = 2)
   )
 
+####
 # Adding for how many articles an invitation was sent out
 
+# Step 1: joining datasets to count the number of invited articles per journal
 
+invited_counts <- data_included_articles %>%
+  left_join(data_all_articles %>% select(DOI, Source.Title), by = "DOI") %>%
+  count(Source.Title, name = "invited")
+
+# Step 2: combining it with the information in the other table
+
+# NOTE: step 1 is not correct yet, because I want the non-bounced invitations not all the invitations that were sent. Bounces true/false variable is included in the dataset.
 
 ```
