@@ -48,8 +48,11 @@ summary_table <- data_all_articles %>%
   summarise(
     total = n(),
     included = sum(included, na.rm = TRUE),
-    not_included = total - included
+    percentage = round((included/total)*100, digits = 2)
   )
+
+# Adding for how many articles an invitation was sent out
+
 
 
 ```
