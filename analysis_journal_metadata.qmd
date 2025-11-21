@@ -42,6 +42,14 @@ data_included_articles <- read.xlsx(
 
 ```{r}
 
+# Table with descriptives about article inclusions per journal
+summary_table <- data_all_articles %>%
+  group_by(Source.Title) %>%
+  summarise(
+    total = n(),
+    included = sum(included, na.rm = TRUE),
+    not_included = total - included
+  )
 
 
 ```
