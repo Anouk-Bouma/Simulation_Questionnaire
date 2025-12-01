@@ -110,7 +110,7 @@ text_list <- map(text_cols, function(col) {
   set_names(text_cols)
 
 # Write to Excel with one sheet per column
-write_xlsx(text_list, "text_responses.xlsx")
+#write_xlsx(text_list, "text_responses.xlsx")
 ```
 
 ## Load intermediate dataset to work with
@@ -133,6 +133,12 @@ load("survey_intermediate_datafile.RData")
 
 ####
 # Impossible combinations
+
+# Listing impossible combinations:
+
+
+
+
 
 ####
 # Slider check
