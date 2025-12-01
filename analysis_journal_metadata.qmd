@@ -48,7 +48,7 @@ summary_table <- data_all_articles %>%
   summarise(
     total = n(),
     included = sum(included, na.rm = TRUE),
-    percentage = round((included/total)*100, digits = 2)
+    percentage = round((included/total)*100, digits = 1)
   )
 
 ####
@@ -59,6 +59,10 @@ summary_table <- data_all_articles %>%
 invited_counts <- data_included_articles %>%
   left_join(data_all_articles %>% select(DOI, Source.Title), by = "DOI") %>%
   count(Source.Title, name = "invited")
+
+# Check if this are indeed 725 articles
+invitations <- sum(invited_counts$invited) # correct
+
 
 # Step 2: combining it with the information in the other table
 
