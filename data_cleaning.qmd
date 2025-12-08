@@ -127,7 +127,13 @@ data <- read.xlsx("survey_data_anonymized_raw.xlsx")
 ```{r}
 
 ####
-# Remove those participants for which an aim was entered in Q2 that does not fit the inclusion criteria
+# Remove participants that should be completely excluded based on open answers
+
+id_remove <- c("id2", "id32", "id94")
+
+data <- data %>%
+  filter(!ID %in% id_remove)
+
 
 ####
 # Changes in individual answers based on open answer options
