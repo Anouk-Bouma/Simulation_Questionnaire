@@ -19,6 +19,7 @@ library(stringr)
 library(purrr)
 library(writexl)
 library(openxlsx)
+library(tibble)
 ```
 
 ## Initial simple data cleaning
@@ -127,7 +128,7 @@ data <- read.xlsx("survey_data_anonymized_raw.xlsx")
 ```{r}
 
 ####
-# Remove participants that should be completely excluded based on open answers
+# Removing participants we decided to exclude based on their answers
 
 id_remove <- c("id2", "id32", "id94")
 
@@ -137,6 +138,19 @@ data <- data %>%
 
 ####
 # Changes in individual answers based on open answer options
+
+# Addition of new answer categories based on themes found in open answers (see codebook for details)
+data <- data %>%
+  add_column(Q16a_16_NEW = NA, .after = "Q16a_15_TEXT") %>% # Keyword: Not Applicable
+  add_column(Q18a_11_NEW = NA, .after = "Q18a_10_TEXT") %>% # Keyword: Not Applicable
+  add_column(Q16a_17_NEW = NA, .after = "Q16a_16_NEW") %>% # Keyword: Low Occurrence
+  add_column(Q18a_12_NEW = NA, .after = "Q18a_11_NEW") %>% # Keyword: Uncommon
+  add_column(Q18a_13_NEW = NA, .after = "Q18a_12_NEW") %>% # Keyword: Alternative Check
+  add_column(Q20_9_NEW = NA, .after = "Q20_8_TEXT") %>% # Keyword: Field
+  add_column(Q20_10_NEW = NA, .after = "Q20_9_NEW") %>% # Keyword: Experience
+  add_column(Q20_11_NEW = NA, .after = "Q20_10_NEW") # Keyword: Not Available
+
+
 
 ####
 # Impossible combinations
