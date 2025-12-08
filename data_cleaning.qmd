@@ -138,7 +138,6 @@ data <- data %>%
 
 ####
 # Changes in individual answers based on open answer options
-
 # Addition of new answer categories based on themes found in open answers (see codebook for details)
 data <- data %>%
   add_column(Q16a_16_NEW = NA, .after = "Q16a_15_TEXT") %>% # Keyword: Not Applicable
@@ -150,6 +149,24 @@ data <- data %>%
   add_column(Q20_10_NEW = NA, .after = "Q20_9_NEW") %>% # Keyword: Experience
   add_column(Q20_11_NEW = NA, .after = "Q20_10_NEW") # Keyword: Not Available
 
+# Changing the score to 1 for participant as coded
+data <- data %>%
+  mutate(Q16a_16_NEW = if_else(ID %in% c("id9", "id69"), 1, NA)) %>%
+  mutate(Q18a_11_NEW = if_else(ID %in% c("id9", "id156", "id161", "id108", "id139"), 1, NA)) %>%
+  mutate(Q16a_17_NEW = if_else(ID %in% c("id108", "id129", "id197", "id210"), 1, NA)) %>%
+  mutate(Q18a_12_NEW = if_else(ID %in% c("id92", "id158"), 1, NA)) %>%
+  mutate(Q18a_13_NEW = if_else(ID %in% c("id60", "id71", "id137", "id178"), 1, NA)) %>%
+  mutate(Q20_9_NEW = if_else(ID %in% c("id27", "id36", "id105", "id165", "id191", "id204"), 1, NA)) %>%
+  mutate(Q20_10_NEW = if_else(ID %in% c("id35", "id36", "id43", "id135", "id140"), 1, NA)) %>%
+  mutate(Q20_11_NEW = if_else(ID %in% c("id161", "id165", "id188", "id213"), 1, NA))
+
+# Changing existing data (that is clearly wrong) based on open answers
+# Q16a: participants that indicated they did not report missings/nonconvergence because there were none, but did not indicate this as the reasons for not reporting this information in the answer options
+
+# CONTINUE HERE::
+
+data <- data %>%
+  mutate(Q16a_6 = if_else(ID %in% c("id96", "id159", "id164", "id178", "id199"), 1, Q16a_6))
 
 
 ####
