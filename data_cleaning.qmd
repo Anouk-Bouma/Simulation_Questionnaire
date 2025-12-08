@@ -25,7 +25,7 @@ library(openxlsx)
 
 ```{r}
 ### Loading the data into R 
-data <- read_excel("simulation_survey_data.xlsx")
+data <- read_excel("simulation_survey_data_direct_qualtrics_download.xlsx")
 
 # Removing irrelevant and identifying columns:
 # StartDate, EndDate, Status, RecordedDate, ResponseId, DistributionChannel
@@ -59,7 +59,7 @@ response_rate <- n_participants/n_invitations # = 0.3223
 ## Add an ID variable to the dataset
 data_filtered <- data_filtered %>%
   mutate(ID = paste0("id", row_number())) %>%
-  relocate(ID)
+  relocate(ID) # put ID variable column as the first column of the dataset
 
 ####
 # Change columns with values into type numeric
@@ -76,9 +76,6 @@ data_filtered <- data_filtered %>%
 ```{r}
 
 data <- data_filtered
-
-# Save data as Rdata file
-save(data, file = "survey_intermediate_datafile.RData")
 
 # Save data as Excel file
 write.xlsx(data, file = "survey_intermediate_datafile.xlsx")
@@ -113,12 +110,16 @@ text_list <- map(text_cols, function(col) {
 #write_xlsx(text_list, "text_responses.xlsx")
 ```
 
-## Load intermediate dataset to work with
+## Anonymizing in Excel
+
+Before going to the next step, the open answers were all anonymized by hand in Excel. Any part of an open answer that allows for an individual to be identified is replaced by '\[redacted\]'. This step does not change anything in terms of reproducibility of the other steps in this script.
+
+## Load anonymized dataset to work with
 
 ```{r}
 
-# Load the partly cleaned data here
-load("survey_intermediate_datafile.RData")
+# Load the anonymized data here
+data <- read.xlsx("survey_data_anonymized_raw.xlsx")
 ```
 
 ## Data Cleaning following evaluation of textual results
