@@ -259,4 +259,8 @@ data <- data %>%
 
 ```{r}
 
+save(data, file = "survey_data_cleaned.RData")
+
+write.xlsx(data, file = "survey_data_cleaned.xlsx")
+
 ```
