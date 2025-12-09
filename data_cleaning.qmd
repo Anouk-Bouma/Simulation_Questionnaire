@@ -170,20 +170,34 @@ data <- data %>%
 # Changing existing data (that is clearly wrong) based on open answers
 
 data <- data %>%
-  # Q16a: participants that indicated they did not report missings/nonconvergence because there were none, but did not indicate this as the reasons for not reporting this information in the answer options
+  # Q16a: participants that indicated they did not report missings/nonconvergence because there were none, but did not     indicate this as the reasons for not reporting this information in the answer options
   mutate(Q16a_6 = if_else(ID %in% c("id96", "id159", "id164", "id178", "id199"), 1, Q16a_6)) %>%
   # id9: change answers to questions about research guidelines
   mutate(Q19_5 = if_else (ID %in% c("id9"), 1, Q19_5)) %>%
   mutate(Q19_6 = if_else (ID %in% c("id9"), 1, Q19_6)) %>%
   mutate(Q20_8 = if_else (ID %in% c("id9"), 1, Q20_8)) %>%
-  mutate(Q20_8_TEXT = if_else (ID %in% c("id9"), "Report all that is relevant to the research question", Q20_8_TEXT))
+  mutate(Q20_8_TEXT = if_else (ID %in% c("id9"), "Report all that is relevant to the research question", Q20_8_TEXT)) %>%
   # id125: change answer to Q23_1 to TRUE
   mutate(Q23_1 = if_else(ID %in% c("id125"), 1, Q23_1)) %>%
   # id14: change answer Q24_3 to TRUE
-  mutate(Q24_3 = if_else(ID %in% c("id14"), 1, Q24_3))
+  mutate(Q24_3 = if_else(ID %in% c("id14"), 1, Q24_3)) %>%
+  # Change answers for participants that indicated that they reported all missings/nonconv. But in the comments indicated   that they did not report it because there were none in their case.
+  mutate(Q14 = if_else(ID %in% c("id21", "id85", "117", "122"), 3, Q14)) %>%
+  mutate(Q15 = if_else(ID %in% c("id21", "id85", "117", "122"), NA, Q15)) %>%
+  mutate(Q16a_6 = if_else(ID %in% c("id21", "id85", "117", "122"), 1, Q16a_6)) %>%
+  # Change answer options for Q16a to 0 for all options except for Q16_6
+  mutate(across(c(Q16a_1, Q16a_2, Q16a_3, Q16a_4, Q16a_5, # all answer options except for Q16a_6
+                  Q16a_7, Q16a_8, Q16a_9, Q16a_10, Q16a_11, 
+                  Q16a_12, Q16a_13, Q16a_14, Q16a_15),
+                ~ if_else(ID %in% c("id21", "id85", "117", "122"),
+                          0,
+                          .))) %>%
+  # Change answer on slider reproducibility to missing for participant that indicated confusion over question
+  mutate(Q28 = if_else(ID %in% c("id61"), NA, Q28))
+  
 
-
-####
+  
+  ####
 # Impossible combinations
 
 # Listing impossible combinations:
