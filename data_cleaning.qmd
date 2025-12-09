@@ -137,54 +137,56 @@ data <- data %>%
 
 
 ####
-# Changes in individual answers based on open answer options
 # Addition of new answer categories based on themes found in open answers (see codebook for details)
-# Changing the score to 1 for participant as coded
+# For participants where their answer option in the 'other' answer option is assigned to a new category, their score for the option 'other' is recoded as a 2 (see codebook). 
+# Note that coding 'other' answers to 2 is done per category, not per question to keep the code as easily interpretable as possible.
 data <- data %>%
   mutate(
     Q16a_16_NEW = if_else(ID %in% c("id9", "id69"), 1, NA_real_), # Keyword: Not Applicable
-    .after = "Q16a_15_TEXT"
+    Q16a_15 = if_else(ID %in% c("id9", "id69"), 2, Q16a_15), # Q16a_15 is option 'other' -> changed to 2 (see codebook)
+    .after = "Q16a_15_TEXT" # Q16a_15_NEW is placed after the last Q16 column
     ) %>%
   mutate(
     Q18a_11_NEW = if_else(ID %in% c("id9", "id156", "id161", "id108", "id139"), 1, NA_real_), # Keyword: Not Applicable
+    Q18a_10 = if_else(ID %in% c("id9", "id156", "id161", "id108", "id139"), 2, Q18a_10),
     .after = "Q18a_10_TEXT"
     ) %>%
   mutate(
     Q16a_17_NEW = if_else(ID %in% c("id108", "id129", "id197", "id210"), 1, NA_real_), # Keyword: Low Occurrence
+    Q16a_15 = if_else(ID %in% c("id108", "id129", "id197", "id210"), 2, Q16a_15),
     .after = "Q16a_16_NEW"
     ) %>%
   mutate(
     Q18a_12_NEW = if_else(ID %in% c("id92", "id158"), 1, NA_real_), # Keyword: Uncommon
+    Q18a_10 = if_else(ID %in% c("id92", "id158"), 2, Q18a_10),
     .after = "Q18a_11_NEW"
     ) %>%
   mutate(
     Q18a_13_NEW = if_else(ID %in% c("id60", "id71", "id137", "id178"), 1, NA_real_), # Keyword: Alternative Check
+    Q18a_10 = if_else(ID %in% c("id60", "id71", "id137", "id178"), 2, Q18a_10),
     .after = "Q18a_12_NEW"
     ) %>%
   mutate(
     Q20_9_NEW = if_else(ID %in% c("id27", "id36", "id105", "id165", "id191", "id204"), 1, NA_real_), # Keyword: Field
+    Q20_8 = if_else(ID %in% c("id27", "id36", "id105", "id165", "id191", "id204"), 2, Q20_8),
     .after = "Q20_8_TEXT"
     ) %>%
   mutate(
     Q20_10_NEW = if_else(ID %in% c("id35", "id36", "id43", "id135", "id140"), 1, NA_real_), # Keyword: Experience
+    Q20_8 = if_else(ID %in% c("id35", "id36", "id43", "id135", "id140"), 2, Q20_8),
     .after = "Q20_9_NEW"
     ) %>%
   mutate(
     Q20_11_NEW = if_else(ID %in% c("id161", "id165", "id188", "id213"), 1, NA_real_), # Keyword: Not Available
+    Q20_8 = if_else(ID %in% c("id161", "id165", "id188", "id213"), 2, Q20_8),
     .after = "Q20_10_NEW"
     )
 
-# Changing the score in the 'other' option to 2/3 (see codebook)
-
-# NOTE: Add code here!!!
-
-
-
-
-# Changing existing data (that is clearly wrong) based on open answers
+# Changing existing answers (that are clearly wrong) based on open answers
 
 data <- data %>%
-  # Q16a: participants that indicated they did not report missings/nonconvergence because there were none, but did not     indicate this as the reasons for not reporting this information in the answer options
+  # Q16a: participants that indicated they did not report missings/nonconvergence because there were none, 
+  #but did not indicate this as the reasons for not reporting this information in the answer options
   mutate(Q16a_6 = if_else(ID %in% c("id96", "id159", "id164", "id178", "id199"), 1, Q16a_6)) %>%
   # id9: change answers to questions about research guidelines
   mutate(Q19_5 = if_else (ID %in% c("id9"), 1, Q19_5)) %>%
@@ -195,7 +197,8 @@ data <- data %>%
   mutate(Q23_1 = if_else(ID %in% c("id125"), 1, Q23_1)) %>%
   # id14: change answer Q24_3 to TRUE
   mutate(Q24_3 = if_else(ID %in% c("id14"), 1, Q24_3)) %>%
-  # Change answers for participants that indicated that they reported all missings/nonconv. But in the comments indicated   that they did not report it because there were none in their case.
+  # Change answers for participants that indicated that they reported all missings/nonconv. 
+  # But in the comments indicated that they did not report it because there were none in their case.
   mutate(Q14 = if_else(ID %in% c("id21", "id85", "117", "122"), 3, Q14)) %>%
   mutate(Q15 = if_else(ID %in% c("id21", "id85", "117", "122"), NA_real_, Q15)) %>%
   mutate(Q16a_6 = if_else(ID %in% c("id21", "id85", "117", "122"), 1, Q16a_6)) %>%
@@ -216,12 +219,14 @@ data <- data %>%
 
 # Listing impossible combinations:
 
-
+# only the one about the openly shared code
 
 
 
 ####
 # Slider check
+
+# also include making the sliders into type double
 ```
 
 ## Variable combining
@@ -234,7 +239,7 @@ data <- data %>%
   mutate(new_method = case_when(Q2 == "1.0" | 
                                 Q2 == "2.0" | 
                                 Q3 == "1.0" ~ 1, 
-                                .default = 0))
+                                .default = 0), .after = "Q3")
 ```
 
 ## Save final dataset after all cleaning steps are done
