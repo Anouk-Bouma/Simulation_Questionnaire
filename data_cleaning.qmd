@@ -139,26 +139,40 @@ data <- data %>%
 ####
 # Changes in individual answers based on open answer options
 # Addition of new answer categories based on themes found in open answers (see codebook for details)
-data <- data %>%
-  add_column(Q16a_16_NEW = NA_real_, .after = "Q16a_15_TEXT") %>% # Keyword: Not Applicable
-  add_column(Q18a_11_NEW = NA_real_, .after = "Q18a_10_TEXT") %>% # Keyword: Not Applicable
-  add_column(Q16a_17_NEW = NA_real_, .after = "Q16a_16_NEW") %>% # Keyword: Low Occurrence
-  add_column(Q18a_12_NEW = NA_real_, .after = "Q18a_11_NEW") %>% # Keyword: Uncommon
-  add_column(Q18a_13_NEW = NA_real_, .after = "Q18a_12_NEW") %>% # Keyword: Alternative Check
-  add_column(Q20_9_NEW = NA_real_, .after = "Q20_8_TEXT") %>% # Keyword: Field
-  add_column(Q20_10_NEW = NA_real_, .after = "Q20_9_NEW") %>% # Keyword: Experience
-  add_column(Q20_11_NEW = NA_real_, .after = "Q20_10_NEW") # Keyword: Not Available
-
 # Changing the score to 1 for participant as coded
 data <- data %>%
-  mutate(Q16a_16_NEW = if_else(ID %in% c("id9", "id69"), 1, NA_real_)) %>%
-  mutate(Q18a_11_NEW = if_else(ID %in% c("id9", "id156", "id161", "id108", "id139"), 1, NA_real_)) %>%
-  mutate(Q16a_17_NEW = if_else(ID %in% c("id108", "id129", "id197", "id210"), 1, NA_real_)) %>%
-  mutate(Q18a_12_NEW = if_else(ID %in% c("id92", "id158"), 1, NA_real_)) %>%
-  mutate(Q18a_13_NEW = if_else(ID %in% c("id60", "id71", "id137", "id178"), 1, NA_real_)) %>%
-  mutate(Q20_9_NEW = if_else(ID %in% c("id27", "id36", "id105", "id165", "id191", "id204"), 1, NA_real_)) %>%
-  mutate(Q20_10_NEW = if_else(ID %in% c("id35", "id36", "id43", "id135", "id140"), 1, NA_real_)) %>%
-  mutate(Q20_11_NEW = if_else(ID %in% c("id161", "id165", "id188", "id213"), 1, NA_real_))
+  mutate(
+    Q16a_16_NEW = if_else(ID %in% c("id9", "id69"), 1, NA_real_), # Keyword: Not Applicable
+    .after = "Q16a_15_TEXT"
+    ) %>%
+  mutate(
+    Q18a_11_NEW = if_else(ID %in% c("id9", "id156", "id161", "id108", "id139"), 1, NA_real_), # Keyword: Not Applicable
+    .after = "Q18a_10_TEXT"
+    ) %>%
+  mutate(
+    Q16a_17_NEW = if_else(ID %in% c("id108", "id129", "id197", "id210"), 1, NA_real_), # Keyword: Low Occurrence
+    .after = "Q16a_16_NEW"
+    ) %>%
+  mutate(
+    Q18a_12_NEW = if_else(ID %in% c("id92", "id158"), 1, NA_real_), # Keyword: Uncommon
+    .after = "Q18a_11_NEW"
+    ) %>%
+  mutate(
+    Q18a_13_NEW = if_else(ID %in% c("id60", "id71", "id137", "id178"), 1, NA_real_), # Keyword: Alternative Check
+    .after = "Q18a_12_NEW"
+    ) %>%
+  mutate(
+    Q20_9_NEW = if_else(ID %in% c("id27", "id36", "id105", "id165", "id191", "id204"), 1, NA_real_), # Keyword: Field
+    .after = "Q20_8_TEXT"
+    ) %>%
+  mutate(
+    Q20_10_NEW = if_else(ID %in% c("id35", "id36", "id43", "id135", "id140"), 1, NA_real_), # Keyword: Experience
+    .after = "Q20_9_NEW"
+    ) %>%
+  mutate(
+    Q20_11_NEW = if_else(ID %in% c("id161", "id165", "id188", "id213"), 1, NA_real_), # Keyword: Not Available
+    .after = "Q20_10_NEW"
+    )
 
 # Changing the score in the 'other' option to 2/3 (see codebook)
 
