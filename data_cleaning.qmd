@@ -193,7 +193,7 @@ data <- data %>%
                           0,
                           .))) %>%
   # Change answer on slider reproducibility to missing for participant that indicated confusion over question
-  mutate(Q28 = if_else(ID %in% c("id61"), NA, Q28))
+  mutate(Q28_1 = if_else(ID %in% c("id61"), NA, Q28_1))
   
 
   
