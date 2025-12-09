@@ -109,6 +109,8 @@ text_list <- map(text_cols, function(col) {
 
 Before going to the next step, the open answers were all anonymized by hand in Excel. Any part of an open answer that allows for an individual to be identified is replaced by '\[redacted\]'. This step does not change anything in terms of reproducibility of the other steps in this script.
 
+<!--# NOTE: Maybe split into a new script from here -->
+
 ## Load anonymized dataset to work with
 
 ```{r}
@@ -249,9 +251,9 @@ data <- data %>%
 ## Creating the variable 'new_method' that indicates if one of the authors has been involved in developing one or multiple methods that are part of their paper
 
 data <- data %>%
-  mutate(new_method = case_when(Q2 == "1.0" | 
-                                Q2 == "2.0" | 
-                                Q3 == "1.0" ~ 1, 
+  mutate(new_method = case_when(Q2 == 1 | 
+                                Q2 == 2 | 
+                                Q3 == 1 ~ 1, 
                                 .default = 0), .after = "Q3")
 ```
 
