@@ -123,11 +123,14 @@ data <- read.xlsx("survey_data_anonymized_raw.xlsx")
 
 # Calculate reponse rate
 n_invitations <- 695
-n_participants <- 224
+n_participants <- nrow(data) # = 224
 response_rate <- n_participants/n_invitations # = 0.3223
 
 # Completion Rate
-# NOTE: add completion rate (before any participant is removed)
+completed <- data %>%
+  count(Finished)
+
+completion_rate <- completed[2,2]/sum(completed$n) # = 0.9196
 ```
 
 ## Data Cleaning following evaluation of textual results
