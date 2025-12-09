@@ -140,25 +140,25 @@ data <- data %>%
 # Changes in individual answers based on open answer options
 # Addition of new answer categories based on themes found in open answers (see codebook for details)
 data <- data %>%
-  add_column(Q16a_16_NEW = NA_integer_, .after = "Q16a_15_TEXT") %>% # Keyword: Not Applicable
-  add_column(Q18a_11_NEW = NA_integer_, .after = "Q18a_10_TEXT") %>% # Keyword: Not Applicable
-  add_column(Q16a_17_NEW = NA_integer_, .after = "Q16a_16_NEW") %>% # Keyword: Low Occurrence
-  add_column(Q18a_12_NEW = NA_integer_, .after = "Q18a_11_NEW") %>% # Keyword: Uncommon
-  add_column(Q18a_13_NEW = NA_integer_, .after = "Q18a_12_NEW") %>% # Keyword: Alternative Check
-  add_column(Q20_9_NEW = NA_integer_, .after = "Q20_8_TEXT") %>% # Keyword: Field
-  add_column(Q20_10_NEW = NA_integer_, .after = "Q20_9_NEW") %>% # Keyword: Experience
-  add_column(Q20_11_NEW = NA_integer_, .after = "Q20_10_NEW") # Keyword: Not Available
+  add_column(Q16a_16_NEW = NA_real_, .after = "Q16a_15_TEXT") %>% # Keyword: Not Applicable
+  add_column(Q18a_11_NEW = NA_real_, .after = "Q18a_10_TEXT") %>% # Keyword: Not Applicable
+  add_column(Q16a_17_NEW = NA_real_, .after = "Q16a_16_NEW") %>% # Keyword: Low Occurrence
+  add_column(Q18a_12_NEW = NA_real_, .after = "Q18a_11_NEW") %>% # Keyword: Uncommon
+  add_column(Q18a_13_NEW = NA_real_, .after = "Q18a_12_NEW") %>% # Keyword: Alternative Check
+  add_column(Q20_9_NEW = NA_real_, .after = "Q20_8_TEXT") %>% # Keyword: Field
+  add_column(Q20_10_NEW = NA_real_, .after = "Q20_9_NEW") %>% # Keyword: Experience
+  add_column(Q20_11_NEW = NA_real_, .after = "Q20_10_NEW") # Keyword: Not Available
 
 # Changing the score to 1 for participant as coded
 data <- data %>%
-  mutate(Q16a_16_NEW = if_else(ID %in% c("id9", "id69"), 1, NA_integer_)) %>%
-  mutate(Q18a_11_NEW = if_else(ID %in% c("id9", "id156", "id161", "id108", "id139"), 1, NA_integer_)) %>%
-  mutate(Q16a_17_NEW = if_else(ID %in% c("id108", "id129", "id197", "id210"), 1, NA_integer_)) %>%
-  mutate(Q18a_12_NEW = if_else(ID %in% c("id92", "id158"), 1, NA_integer_)) %>%
-  mutate(Q18a_13_NEW = if_else(ID %in% c("id60", "id71", "id137", "id178"), 1, NA_integer_)) %>%
-  mutate(Q20_9_NEW = if_else(ID %in% c("id27", "id36", "id105", "id165", "id191", "id204"), 1, NA_integer_)) %>%
-  mutate(Q20_10_NEW = if_else(ID %in% c("id35", "id36", "id43", "id135", "id140"), 1, NA_integer_)) %>%
-  mutate(Q20_11_NEW = if_else(ID %in% c("id161", "id165", "id188", "id213"), 1, NA_integer_))
+  mutate(Q16a_16_NEW = if_else(ID %in% c("id9", "id69"), 1, NA_real_)) %>%
+  mutate(Q18a_11_NEW = if_else(ID %in% c("id9", "id156", "id161", "id108", "id139"), 1, NA_real_)) %>%
+  mutate(Q16a_17_NEW = if_else(ID %in% c("id108", "id129", "id197", "id210"), 1, NA_real_)) %>%
+  mutate(Q18a_12_NEW = if_else(ID %in% c("id92", "id158"), 1, NA_real_)) %>%
+  mutate(Q18a_13_NEW = if_else(ID %in% c("id60", "id71", "id137", "id178"), 1, NA_real_)) %>%
+  mutate(Q20_9_NEW = if_else(ID %in% c("id27", "id36", "id105", "id165", "id191", "id204"), 1, NA_real_)) %>%
+  mutate(Q20_10_NEW = if_else(ID %in% c("id35", "id36", "id43", "id135", "id140"), 1, NA_real_)) %>%
+  mutate(Q20_11_NEW = if_else(ID %in% c("id161", "id165", "id188", "id213"), 1, NA_real_))
 
 # Changing the score in the 'other' option to 2/3 (see codebook)
 
@@ -183,7 +183,7 @@ data <- data %>%
   mutate(Q24_3 = if_else(ID %in% c("id14"), 1, Q24_3)) %>%
   # Change answers for participants that indicated that they reported all missings/nonconv. But in the comments indicated   that they did not report it because there were none in their case.
   mutate(Q14 = if_else(ID %in% c("id21", "id85", "117", "122"), 3, Q14)) %>%
-  mutate(Q15 = if_else(ID %in% c("id21", "id85", "117", "122"), NA_integer_, Q15)) %>%
+  mutate(Q15 = if_else(ID %in% c("id21", "id85", "117", "122"), NA_real_, Q15)) %>%
   mutate(Q16a_6 = if_else(ID %in% c("id21", "id85", "117", "122"), 1, Q16a_6)) %>%
   # Change answer options for Q16a to 0 for all options except for Q16_6
   mutate(across(c(Q16a_1, Q16a_2, Q16a_3, Q16a_4, Q16a_5, # all answer options except for Q16a_6
