@@ -183,7 +183,7 @@ data <- data %>%
     )
 
 # Changing existing answers (that are clearly wrong) based on open answers
-
+# All open answers and rationale for changing answers can be found in the supplemental materials
 data <- data %>%
   # Q16a: participants that indicated they did not report missings/nonconvergence because there were none, 
   #but did not indicate this as the reasons for not reporting this information in the answer options
@@ -202,16 +202,16 @@ data <- data %>%
   mutate(Q14 = if_else(ID %in% c("id21", "id85", "117", "122"), 3, Q14)) %>%
   mutate(Q15 = if_else(ID %in% c("id21", "id85", "117", "122"), NA_real_, Q15)) %>%
   mutate(Q16a_6 = if_else(ID %in% c("id21", "id85", "117", "122"), 1, Q16a_6)) %>%
-  # Change answer options for Q16a to 0 for all options except for Q16_6
-  mutate(across(c(Q16a_1, Q16a_2, Q16a_3, Q16a_4, Q16a_5, # all answer options except for Q16a_6
+  mutate(across(c(Q16a_1, Q16a_2, Q16a_3, Q16a_4, Q16a_5, # all answer options except for Q16a_6 set to 0 instead of NA
                   Q16a_7, Q16a_8, Q16a_9, Q16a_10, Q16a_11, 
                   Q16a_12, Q16a_13, Q16a_14, Q16a_15),
                 ~ if_else(ID %in% c("id21", "id85", "117", "122"),
                           0,
                           .))) %>%
   # Change answer on slider reproducibility to missing for participant that indicated confusion over question
-  mutate(Q28_1 = if_else(ID %in% c("id61"), NA, Q28_1))
-  
+  mutate(Q28_1 = if_else(ID %in% c("id61"), NA, Q28_1)) %>%
+  # Change answer Q25_12 to 3 for participant that did not indicate a reasons but gave a non-content related comment (see codebook)
+  mutate(Q25_12 = if_else(ID %in% c("id201"), 3, Q25_12))
 
   
   ####
