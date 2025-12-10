@@ -60,9 +60,11 @@ plot_question <- function(
       ) %>%
       filter(selected == 1) %>%
       left_join(meta_group, by = "question_code") %>%
-    
+      mutate(answer_label = factor(
+        answer_label, levels = meta_group$answer_label)) %>%
+      
     ggplot(aes(x = fct_reorder(answer_label, desc(order)))) +
-      geom_bar(fill = "#f68060", alpha =0.6, width = 0.4) +
+      geom_bar(fill = "#f68060", alpha = 0.6, width = 0.4) +
       coord_flip() +
       scale_y_reverse() +
       geom_text(stat = "count", aes(label = after_stat(count)),
@@ -74,7 +76,7 @@ plot_question <- function(
       # theme(
       #   axis.text.y = element_text(angle = 0, hjust = 1)
       # )
-  
+    
     } else {
     
       # For single-select multiple choice questions
@@ -85,19 +87,21 @@ plot_question <- function(
       left_join(meta_group, by = join_by(!!.data[[qcol]] == value)) %>%
 
     ggplot(aes(x = fct_reorder(answer_label, desc(order)))) +
-      geom_bar(fill = "#f68060", alpha =0.6, width = 0.4) +
+      geom_bar(fill = "#f68060", alpha = 0.6, width = 0.4) +
       coord_flip() +
+      scale_y_reverse() +
       geom_text(stat = "count", aes(label = after_stat(count)),
                 hjust = -0.1, size = 3) +
-      scale_x_discrete(labels = ~ stringr::str_wrap(.x, width = wrap_width)) +
-      labs(x = NULL, y = "Count") +
+      scale_x_discrete(labels = ~ stringr::str_wrap(.x, width = wrap_width),
+                       position = "top") +
+      labs(x = NULL, y = "Count", title = meta_group$item[1]) +
       theme_classic()
     
   }
 }
 
 
-plot_question(data, meta, "Q7a")
+plot_question(data, meta, "Q4")
 
 
 #ggsave("barplotnew.png", width = 10, height = 6, dpi = 300)
