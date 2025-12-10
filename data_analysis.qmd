@@ -52,45 +52,65 @@ plot_question <- function(
   
   # For multi-select questions that use multiple columns in the data:
   if (n_distinct(meta_group$question_code) > 1) { 
-    data %>%
-      pivot_longer(
-        cols = all_of(meta_group$question_code),
-        names_to = "question_code",
-        values_to = "selected"
+    
+    # create table with all options
+    all_options <- meta_group %>%
+      select(question_code, answer_label, order)
+    
+    plot_data <- all_options %>%
+      left_join(
+        data %>%
+          pivot_longer(
+            cols = all_of(meta_group$question_code),
+            names_to = "question_code",
+            values_to = "selected"
+          ) %>%
+          filter(selected == 1) %>%
+          count(question_code),
+        by = "question_code"
       ) %>%
-      filter(selected == 1) %>%
-      left_join(meta_group, by = "question_code") %>%
-      mutate(answer_label = factor(
-        answer_label, levels = meta_group$answer_label)) %>%
-      
-    ggplot(aes(x = fct_reorder(answer_label, desc(order)))) +
-      geom_bar(fill = "#f68060", alpha = 0.6, width = 0.4) +
+      mutate(n = replace_na(n, 0))  # unselected options = 0
+    
+    plot_data <- plot_data %>%
+      mutate(answer_label = factor(answer_label, levels = meta_group$answer_label))
+    
+    ggplot(plot_data, aes(x = fct_reorder(answer_label, desc(order)), y = n)) +
+      geom_col(fill = "#f68060", alpha = 0.6, width = 0.4) +
       coord_flip() +
       scale_y_reverse() +
-      geom_text(stat = "count", aes(label = after_stat(count)),
+      geom_text(aes(label = n),
                 hjust = -0.2, size = 3) +
       scale_x_discrete(labels = ~ stringr::str_wrap(.x, width = wrap_width),
                        position = "top") +
       labs(x = NULL, y = "Count", title = meta_group$item[1]) +
-      theme_bw() #+
-      # theme(
-      #   axis.text.y = element_text(angle = 0, hjust = 1)
-      # )
+      theme_bw()
     
-    } else {
+  } else {
     
-      # For single-select multiple choice questions
+    # For single-select multiple choice questions
     qcol <- meta_group$question_code[1]
-
-    data %>%
-      filter(!is.na(.data[[qcol]])) %>%
-      left_join(meta_group, by = join_by(!!.data[[qcol]] == value)) %>%
-
-    ggplot(aes(x = fct_reorder(answer_label, desc(order)))) +
-      geom_bar(fill = "#f68060", alpha = 0.6, width = 0.4) +
+    
+    # create table with all options
+    all_options <- meta_group %>%
+      select(value, answer_label, order)
+    
+    plot_data <- all_options %>%
+      left_join(
+        data %>%
+          filter(!is.na(.data[[qcol]])) %>%
+          count(!!.data[[qcol]]),
+        by = c("value" = qcol)
+      ) %>%
+      mutate(n = replace_na(n, 0))  # unselected options = 0
+    
+    plot_data <- plot_data %>%
+      mutate(answer_label = factor(answer_label, levels = meta_group$answer_label))
+    
+    ggplot(plot_data, aes(x = fct_reorder(answer_label, desc(order)), y = n)) +
+      geom_col(fill = "#f68060", alpha = 0.6, width = 0.4) +
       coord_flip() +
       scale_y_reverse() +
-      geom_text(stat = "count", aes(label = after_stat(count)),
+      geom_text(aes(label = n),
                 hjust = -0.1, size = 3) +
       scale_x_discrete(labels = ~ stringr::str_wrap(.x, width = wrap_width),
                        position = "top") +
