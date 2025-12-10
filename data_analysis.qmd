@@ -45,18 +45,18 @@ For every question, there have to be the following plots:
 
 plot_question <- function(
     data = data, metadata = meta, question, wrap_width = 60) {
-  
+ 
   meta_group <- metadata %>%
     filter(question_group == question) %>%
     arrange(order)
   
-  # For multi-select questions that use multiple columns in the data:
+  wrapped_title <- stringr::str_wrap(meta_group$item[1], width = wrap_width)
+
   if (n_distinct(meta_group$question_code) > 1) { 
-    
-    # create table with all options
+   
     all_options <- meta_group %>%
       select(question_code, answer_label, order)
-    
+   
     plot_data <- all_options %>%
       left_join(
         data %>%
@@ -69,11 +69,11 @@ plot_question <- function(
           count(question_code),
         by = "question_code"
       ) %>%
-      mutate(n = replace_na(n, 0))  # unselected options = 0
-    
+      mutate(n = replace_na(n, 0))
+   
     plot_data <- plot_data %>%
       mutate(answer_label = factor(answer_label, levels = meta_group$answer_label))
-    
+   
     ggplot(plot_data, aes(x = fct_reorder(answer_label, desc(order)), y = n)) +
       geom_col(fill = "#f68060", alpha = 0.6, width = 0.4) +
       coord_flip() +
@@ -82,30 +82,35 @@ plot_question <- function(
                 hjust = -0.2, size = 3) +
       scale_x_discrete(labels = ~ stringr::str_wrap(.x, width = wrap_width),
                        position = "top") +
-      labs(x = NULL, y = "Count", title = meta_group$item[1]) +
-      theme_bw()
-    
+      labs(x = NULL, y = "Count", title = wrapped_title) +
+      theme_bw() +
+      theme(
+        axis.text.y = element_text(angle = 0, hjust = 1),   # ← corrected axis
+        plot.title.position = "plot",
+        plot.title = element_text(hjust = 0.5, face = "bold"),
+        plot.margin = margin(t = 20, r = 10, b = 10, l = 10, unit = "pt")
+      )
+   
   } else {
-    
-    # For single-select multiple choice questions
+   
     qcol <- meta_group$question_code[1]
-    
-    # create table with all options
+   
     all_options <- meta_group %>%
       select(value, answer_label, order)
-    
+   
     plot_data <- all_options %>%
       left_join(
         data %>%
           filter(!is.na(.data[[qcol]])) %>%
-          count(!!.data[[qcol]]),
-        by = c("value" = qcol)
+          group_by(value = .data[[qcol]]) %>% 
+          summarise(n = n(), .groups = "drop"),
+        by = "value" 
       ) %>%
-      mutate(n = replace_na(n, 0))  # unselected options = 0
-    
+      mutate(n = replace_na(n, 0))
+   
     plot_data <- plot_data %>%
       mutate(answer_label = factor(answer_label, levels = meta_group$answer_label))
-    
+   
     ggplot(plot_data, aes(x = fct_reorder(answer_label, desc(order)), y = n)) +
       geom_col(fill = "#f68060", alpha = 0.6, width = 0.4) +
       coord_flip() +
@@ -114,14 +119,22 @@ plot_question <- function(
                 hjust = -0.1, size = 3) +
       scale_x_discrete(labels = ~ stringr::str_wrap(.x, width = wrap_width),
                        position = "top") +
-      labs(x = NULL, y = "Count", title = meta_group$item[1]) +
-      theme_classic()
-    
+      labs(x = NULL, y = "Count", title = wrapped_title) +
+      theme_classic() +
+      theme(
+        axis.text.y = element_text(angle = 0, hjust = 1),   # ← corrected axis
+        plot.title.position = "plot",
+        plot.title = element_text(hjust = 0.5, face = "bold"),
+        plot.margin = margin(t = 20, r = 10, b = 10, l = 10, unit = "pt")
+      )
   }
 }
 
 
-plot_question(data, meta, "Q4")
+
+
+
+plot_question(data, meta, "Q16a")
 
 
 #ggsave("barplotnew.png", width = 10, height = 6, dpi = 300)
@@ -133,6 +146,19 @@ plot_question(data, meta, "Q4")
 # - Only the yes should be indicated
 # maybe percentages for better comparisons between groups? or plot them both in the same plot?
 
+
+```
+
+## Making some plots
+
+```{r}
+
+all_questions <- c("Q2", "Q3", "Q4", "Q5", "Q6", "Q7a", "Q7b", "Q8", "Q9", "Q10a", "Q10b", "Q11", "Q12", "Q13a", "Q13b", "Q14", "Q15", "Q16a", "Q16b", 
+  "Q17", "Q18a", "Q18b", "Q19", "Q20", "Q21", "Q22", "Q23", "Q24", "Q25")
+
+for (i in 1:length(all_questions)) {
+  print(plot_question(data, meta, all_questions[i]))
+}
 
 ```
 
