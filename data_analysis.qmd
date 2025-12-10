@@ -39,6 +39,8 @@ For every question, there have to be the following plots:
 
     <!--# Put all questions and labels into an external Excel file that can be used as the basis to plot from -->
 
+## Specifying function for plots per question
+
 ```{r}
 
 plot_question <- function(
@@ -58,27 +60,32 @@ plot_question <- function(
       ) %>%
       filter(selected == 1) %>%
       left_join(meta_group, by = "question_code") %>%
-      ggplot(aes(x = fct_reorder(answer_label, order))) +
-      geom_bar(fill = "steelblue") +
+    
+    ggplot(aes(x = fct_reorder(answer_label, desc(order)))) +
+      geom_bar(fill = "#f68060", alpha =0.6, width = 0.4) +
       coord_flip() +
+      scale_y_reverse() +
       geom_text(stat = "count", aes(label = after_stat(count)),
-                hjust = -0.1, size = 3) +
-      scale_x_discrete(labels = ~ stringr::str_wrap(.x, width = wrap_width)) +
-      labs(x = NULL, y = "Count") +
-      theme_classic() #+
+                hjust = -0.2, size = 3) +
+      scale_x_discrete(labels = ~ stringr::str_wrap(.x, width = wrap_width),
+                       position = "top") +
+      labs(x = NULL, y = "Count", title = meta_group$item[1]) +
+      theme_bw() #+
       # theme(
       #   axis.text.y = element_text(angle = 0, hjust = 1)
       # )
   
     } else {
-    # Case 2: SINGLE-CHOICE (one column with coded values)
+    
+      # For single-select multiple choice questions
     qcol <- meta_group$question_code[1]
 
     data %>%
       filter(!is.na(.data[[qcol]])) %>%
       left_join(meta_group, by = join_by(!!.data[[qcol]] == value)) %>%
-      ggplot(aes(x = fct_reorder(answer_label, order))) +
-      geom_bar(fill = "steelblue") +
+
+    ggplot(aes(x = fct_reorder(answer_label, desc(order)))) +
+      geom_bar(fill = "#f68060", alpha =0.6, width = 0.4) +
       coord_flip() +
       geom_text(stat = "count", aes(label = after_stat(count)),
                 hjust = -0.1, size = 3) +
@@ -90,7 +97,7 @@ plot_question <- function(
 }
 
 
-plot_question(data, meta, "Q10b")
+plot_question(data, meta, "Q7a")
 
 
 #ggsave("barplotnew.png", width = 10, height = 6, dpi = 300)
