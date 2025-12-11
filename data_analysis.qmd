@@ -58,6 +58,8 @@ For every question, there have to be the following plots:
 
 -   Make option in function to split by a specific variable (ideally plotted in the same graph). And make an option to select freqencies or percentages in the function.
 
+-   a/b versions of the same question should also be in combined plots
+
 ## Specifying function for plots per question
 
 ```{r}
