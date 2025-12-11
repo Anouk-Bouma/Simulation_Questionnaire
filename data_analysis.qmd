@@ -29,6 +29,25 @@ load("survey_data_cleaned.RData")
 meta <- read.xlsx("question_labels.xlsx", sheet = "codebook")
 ```
 
+## Descriptives
+
+-   
+
+```{r}
+
+sample_sizes <- meta %>%
+  distinct(question_group, question_code) %>%
+  arrange(question_group) %>%
+  group_by(question_group) %>%
+  summarise(
+    sample_col = first(question_code),
+    n = sum(!is.na(data[[sample_col]])),
+    .groups = "drop"
+  )
+
+
+```
+
 ## Plotting
 
 For every question, there have to be the following plots:
@@ -36,6 +55,8 @@ For every question, there have to be the following plots:
 -   Frequencies overall
 
 -   Frequencies split over neutral/non-neutral
+
+-   Make option in function to split by a specific variable (ideally plotted in the same graph). And make an option to select freqencies or percentages in the function.
 
 ## Specifying function for plots per question
 
@@ -77,10 +98,13 @@ plot_question <- function(
     
     # Order answer labels according to metadata (not alphabetical)
     plot_data <- plot_data %>%
-      mutate(answer_label = factor(answer_label, levels = meta_group$answer_label))
+      mutate(answer_label = factor(
+        answer_label, levels = meta_group$answer_label))
     
     # ----- Plot for multi-select -----
-    ggplot(plot_data, aes(x = fct_reorder(answer_label, desc(order)), y = n)) +
+    ggplot(plot_data, 
+           aes(x = fct_reorder(answer_label, desc(order)), 
+               y = n)) +
       geom_col(fill = "#f68060", alpha = 0.6, width = 0.4) +
       coord_flip() +             # horizontal bars
       scale_y_reverse() +        # bars go right → left
@@ -122,10 +146,13 @@ plot_question <- function(
     
     # Keep original answer order
     plot_data <- plot_data %>%
-      mutate(answer_label = factor(answer_label, levels = meta_group$answer_label))
+      mutate(answer_label = factor(
+        answer_label, levels = meta_group$answer_label))
     
     # ----- Plot for single-select -----
-    ggplot(plot_data, aes(x = fct_reorder(answer_label, desc(order)), y = n)) +
+    ggplot(plot_data, 
+           aes(x = fct_reorder(answer_label, desc(order)), 
+               y = n)) +
       geom_col(fill = "#f68060", alpha = 0.6, width = 0.4) +
       coord_flip() +
       scale_y_reverse() +
@@ -147,7 +174,7 @@ plot_question <- function(
 }
 
 
-plot_question(data, meta, "Q16a")
+#plot_question(data, meta, "Q16a")
 
 ```
 
@@ -184,8 +211,11 @@ plot_question_percentage <- function(
       filter(selected == 1) %>% 
       count(question_code) 
     
-    # Total number of respondents (for denominator)
-    total_n <- nrow(data)
+    # Total number of respondents
+    total_n <- sample_sizes %>%
+      filter(question_group == question) %>%
+      pull(n) %>% # pull the column n
+      .[1] # take first element from column n
 
     # Add missing options as 0 + compute percentages
     plot_data <- all_options %>%
@@ -197,10 +227,14 @@ plot_question_percentage <- function(
 
     # Order answer labels according to metadata
     plot_data <- plot_data %>%
-      mutate(answer_label = factor(answer_label, levels = meta_group$answer_label))
+      mutate(answer_label = factor(
+        answer_label, levels = meta_group$answer_label
+        ))
     
     # ----- Plot for multi-select -----
-    ggplot(plot_data, aes(x = fct_reorder(answer_label, desc(order)), y = pct)) +
+    ggplot(plot_data, 
+           aes(x = fct_reorder(answer_label, desc(order)), 
+               y = pct)) +
       geom_col(fill = "#f68060", alpha = 0.6, width = 0.4) +
       coord_flip() +
       scale_y_reverse(limits = c(100, 0)) +        # 0–100% axis always
@@ -232,8 +266,11 @@ plot_question_percentage <- function(
       group_by(value = .data[[qcol]]) %>%
       summarise(n = n(), .groups = "drop")
     
-    # Total responses for denominator
-    total_n <- nrow(data %>% filter(!is.na(.data[[qcol]])))
+    # Total number of respondents
+    total_n <- sample_sizes %>%
+      filter(question_group == question) %>%
+      pull(n) %>% # pull the column n
+      .[1] # take first element from column n
     
     # Add missing options + compute percentages
     plot_data <- all_options %>%
@@ -245,10 +282,13 @@ plot_question_percentage <- function(
     
     # Keep original answer order
     plot_data <- plot_data %>%
-      mutate(answer_label = factor(answer_label, levels = meta_group$answer_label))
+      mutate(answer_label = factor(
+        answer_label, levels = meta_group$answer_label))
     
     # ----- Plot for single-select -----
-    ggplot(plot_data, aes(x = fct_reorder(answer_label, desc(order)), y = pct)) +
+    ggplot(plot_data, 
+           aes(x = fct_reorder(answer_label, desc(order)), 
+               y = pct)) +
       geom_col(fill = "#f68060", alpha = 0.6, width = 0.4) +
       coord_flip() +
       scale_y_reverse(limits = c(100, 0)) +        # 0–100% axis always
@@ -274,12 +314,12 @@ plot_question_percentage <- function(
 
 ```{r}
 
-all_questions <- c("Q2", "Q3", "Q4", "Q5", "Q6", "Q7a", "Q7b", "Q8", "Q9", "Q10a", "Q10b", "Q11", "Q12", "Q13a", "Q13b", "Q14", "Q15", "Q16a", "Q16b", 
+plot_questions <- c("Q2", "Q3", "Q4", "Q5", "Q6", "Q7a", "Q7b", "Q8", "Q9", "Q10a", "Q10b", "Q11", "Q12", "Q13a", "Q13b", "Q14", "Q15", "Q16a", "Q16b", 
   "Q17", "Q18a", "Q18b", "Q19", "Q20", "Q21", "Q22", "Q23", "Q24", "Q25")
 
-for (i in 1:length(all_questions)) {
-  print(plot_question(data, meta, all_questions[i]))
-  print(plot_question_percentage(data, meta, all_questions[i]))
+for (i in 1:length(plot_questions)) {
+  print(plot_question(data, meta, plot_questions[i]))
+  print(plot_question_percentage(data, meta, plot_questions[i]))
 }
 
 ```
