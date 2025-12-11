@@ -45,6 +45,112 @@ sample_sizes <- meta %>%
     .groups = "drop"
   )
 
+# Function to get answer options per question
+get_question_columns <- function(metadata = meta, question) {
+meta_group <- metadata %>%
+    filter(question_group == question) %>%
+    arrange(order)
+
+return(meta_group)
+}
+```
+
+## Descriptives table
+
+```{r}
+
+create_question_table <- function(data, metadata) {
+
+  all_tables <- list()
+
+  # Ensure metadata$value is numeric (single-select joining fix)
+  metadata <- metadata %>%
+    mutate(value = suppressWarnings(as.numeric(value)))
+
+  for (question in unique(metadata$question_group)) {
+
+    # Metadata for this question
+    meta_group <- metadata %>%
+      filter(question_group == question) %>%
+      arrange(order)
+
+    q_order <- unique(meta_group$question_order)
+
+    # Get sample size for this question
+    sample_n <- sample_sizes %>%
+      filter(question_group == question) %>%
+      pull(n)
+
+    # MULTI-SELECT QUESTION -----------------------------------------
+    if (n_distinct(meta_group$question_code) > 1) {
+
+      option_cols <- meta_group$question_code
+      subdata <- data[, option_cols]
+      answered <- rowSums(!is.na(subdata)) > 0
+
+      tbl <- subdata %>%
+        summarise(across(all_of(option_cols), ~ sum(.x == 1, na.rm = TRUE))) %>%
+        pivot_longer(
+          cols = everything(),
+          names_to = "question_code",
+          values_to = "N"
+        ) %>%
+        left_join(meta_group, by = "question_code") %>%
+        mutate(
+          Question = question,
+          question_order = q_order,
+          sample_size = sample_n
+        ) %>%
+        select(Question, question_order, answer_label, N, sample_size, order)
+
+      all_tables[[question]] <- tbl
+
+    } else {
+
+      # SINGLE-SELECT QUESTION ---------------------------------------
+      qcol <- meta_group$question_code[1]
+      data[[qcol]] <- suppressWarnings(as.numeric(data[[qcol]]))
+
+      tbl <- meta_group %>%
+        select(value, answer_label, order) %>%
+        left_join(
+          data %>%
+            filter(!is.na(.data[[qcol]])) %>%
+            group_by(value = .data[[qcol]]) %>%
+            summarise(N = n(), .groups = "drop"),
+          by = "value"
+        ) %>%
+        mutate(
+          N = replace_na(N, 0),
+          Question = question,
+          question_order = q_order,
+          sample_size = sample_n
+        ) %>%
+        select(Question, question_order, answer_label, N, sample_size, order)
+
+      all_tables[[question]] <- tbl
+    }
+  }
+
+  # Bind all rows
+  result <- bind_rows(all_tables) %>%
+    arrange(question_order, order) %>%
+    select(-order)
+
+  # ---- NEW: calculate Percentage at the very end ----
+  result <- result %>%
+    mutate(
+      Percentage = ifelse(
+        sample_size == 0, 0, round(N / sample_size * 100, 1))
+    ) %>%
+    # drop column question_order from dataframe
+    select(!question_order)
+
+  result
+}
+
+
+
 
 ```
 
