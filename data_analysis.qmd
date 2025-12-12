@@ -191,6 +191,39 @@ descriptives_table <- create_question_table(data, meta, sample_sizes)
 write.xlsx(descriptives_table, file = "test_table_desc.xlsx")
 ```
 
+## Descriptives continues variables
+
+```{r}
+
+vars <- c("Q1", "Q27_1", "Q28_1", "Q29_1")
+
+# Create an empty dataframe to fill
+descriptives_continues <- data.frame(
+  variable = vars,
+  mean = NA_real_,
+  sd = NA_real_,
+  n = NA_integer_,
+  stringsAsFactors = FALSE
+)
+
+# Loop through variables and fill the table
+for (i in seq_along(vars)) {
+  v <- vars[i]
+  
+  # extract variable and recode -99 and 999 to NA
+  x <- data[[v]]
+  x[x %in% c(-99, 999)] <- NA
+  
+  # fill values
+  descriptives_continues$mean[i] <- mean(x, na.rm = TRUE)
+  descriptives_continues$sd[i]   <- sd(x, na.rm = TRUE)
+  descriptives_continues$n[i]    <- sum(!is.na(x))
+}
+
+descriptives_continues
+  
+```
+
 ## Plotting
 
 For every question, there have to be the following plots:
