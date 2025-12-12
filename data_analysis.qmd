@@ -59,21 +59,32 @@ return(meta_group)
 
 ```{r}
 
-create_question_table <- function(data, metadata) {
+#' Title
+#'
+#' @param data dataset containing the respondent survey data
+#' @param metadata dataset containing metadata about the survey including question numbers, answer categories and variable names.
+#' @param sample_sizes a dataframe containing the sample size per question
+#'
+#' @returns
+#'
+#' @examples
+create_question_table <- function(data, metadata, sample_sizes) {
 
   all_tables <- list()
 
-  # Ensure metadata$value is numeric (single-select joining fix)
+  # Ensure metadata$value is numeric so it can be joined later
   metadata <- metadata %>%
     mutate(value = suppressWarnings(as.numeric(value)))
-
+  
+  # Loops over every question: question_group is a question (e.g., Q7a)
   for (question in unique(metadata$question_group)) {
 
     # Metadata for this question
     meta_group <- metadata %>%
-      filter(question_group == question) %>%
+      filter(question_group == question) %>% # 'question' is the loop index
       arrange(order)
-
+    
+    # Take order index for this question
     q_order <- unique(meta_group$question_order)
 
     # Get sample size for this question
@@ -82,29 +93,38 @@ create_question_table <- function(data, metadata) {
       pull(n)
 
     # MULTI-SELECT QUESTION -----------------------------------------
-    if (n_distinct(meta_group$question_code) > 1) {
-
+    if (n_distinct(meta_group$question_code) > 1) { # check if multi-select
+      
+      # Identify columns in participant data for this question and extract
       option_cols <- meta_group$question_code
       subdata <- data[, option_cols]
-      answered <- rowSums(!is.na(subdata)) > 0
+      #answered <- rowSums(!is.na(subdata)) > 0 #NOTE: delete line?
 
       tbl <- subdata %>%
-        summarise(across(all_of(option_cols), ~ sum(.x == 1, na.rm = TRUE))) %>%
+        summarise(across(all_of(option_cols), 
+                         ~ sum(.x == 1, na.rm = TRUE))) %>%
         pivot_longer(
           cols = everything(),
           names_to = "question_code",
           values_to = "N"
         ) %>%
+        # add metadata (answer labels to data)
         left_join(meta_group, by = "question_code") %>%
         mutate(
           Question = question,
           question_order = q_order,
           sample_size = sample_n
         ) %>%
-        select(Question, question_order, answer_label, N, sample_size, order)
+        select(Question, 
+               question_order,
+               variable_name,
+               answer_label, 
+               N, 
+               sample_size, 
+               order)
 
       all_tables[[question]] <- tbl
-
+      
     } else {
 
       # SINGLE-SELECT QUESTION ---------------------------------------
@@ -112,7 +132,7 @@ create_question_table <- function(data, metadata) {
       data[[qcol]] <- suppressWarnings(as.numeric(data[[qcol]]))
 
       tbl <- meta_group %>%
-        select(value, answer_label, order) %>%
+        select(value, variable_name, answer_label, order) %>%
         left_join(
           data %>%
             filter(!is.na(.data[[qcol]])) %>%
@@ -126,9 +146,16 @@ create_question_table <- function(data, metadata) {
           question_order = q_order,
           sample_size = sample_n
         ) %>%
-        select(Question, question_order, answer_label, N, sample_size, order)
+        select(Question, 
+               question_order,
+               variable_name,
+               answer_label, 
+               N, 
+               sample_size, 
+               order)
 
       all_tables[[question]] <- tbl
+      
     }
   }
 
@@ -143,6 +170,9 @@ create_question_table <- function(data, metadata) {
       Percentage = ifelse(
         sample_size == 0, 0, round(N / sample_size * 100, 1))
     ) %>%
+    mutate(
+      N_percentage = paste0(sample_size, " (", Percentage, "%)")
+    ) %>%
     # drop column question_order from dataframe
     select(!question_order)
 
@@ -150,8 +180,15 @@ create_question_table <- function(data, metadata) {
 }
 
 
+descriptives_table <- create_question_table(data, meta, sample_sizes)
 
+```
 
+## Save table for use in paper
+
+```{r}
+
+write.xlsx(table, file = "test_table_desc.xlsx")
 ```
 
 ## Plotting
