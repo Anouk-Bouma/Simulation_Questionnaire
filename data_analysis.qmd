@@ -224,6 +224,26 @@ descriptives_continues
   
 ```
 
+## Correlations
+
+```{r}
+
+vars <- c("Q1", "Q27_1", "Q28_1", "Q29_1")
+
+# Extract only the chosen variables
+df <- data[vars]
+
+df[df == -99] <- NA
+df[df == 999] <- NA
+
+# Compute pairwise correlations using pairwise complete observations
+cor_matrix <- cor(df, use = "pairwise.complete.obs")
+
+cor_matrix
+
+write.xlsx(cor_matrix, "cor_matrix.xlsx")
+```
+
 ## Plotting
 
 For every question, there have to be the following plots:
