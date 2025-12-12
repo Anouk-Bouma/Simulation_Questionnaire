@@ -171,7 +171,7 @@ create_question_table <- function(data, metadata, sample_sizes) {
         sample_size == 0, 0, round(N / sample_size * 100, 1))
     ) %>%
     mutate(
-      N_percentage = paste0(sample_size, " (", Percentage, "%)")
+      N_percentage = paste0(N, " (", Percentage, "%)")
     ) %>%
     # drop column question_order from dataframe
     select(!question_order)
@@ -188,7 +188,7 @@ descriptives_table <- create_question_table(data, meta, sample_sizes)
 
 ```{r}
 
-write.xlsx(table, file = "test_table_desc.xlsx")
+write.xlsx(descriptives_table, file = "test_table_desc.xlsx")
 ```
 
 ## Plotting
