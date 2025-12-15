@@ -45,7 +45,7 @@ sample_sizes <- meta %>%
     .groups = "drop"
   )
 
-# Function to get answer options per question
+# Function to get answer options per question (NOTE: not needed anymore)
 get_question_columns <- function(metadata = meta, question) {
 meta_group <- metadata %>%
     filter(question_group == question) %>%
@@ -231,17 +231,41 @@ descriptives_continues
 vars <- c("Q1", "Q27_1", "Q28_1", "Q29_1")
 
 # Extract only the chosen variables
-df <- data[vars]
+vars_for_correlations <- data[vars]
 
-df[df == -99] <- NA
-df[df == 999] <- NA
+# Change missing values to NA (-99 and 999)
+vars_for_correlations[vars_for_correlations == -99] <- NA
+vars_for_correlations[vars_for_correlations == 999] <- NA
 
 # Compute pairwise correlations using pairwise complete observations
-cor_matrix <- cor(df, use = "pairwise.complete.obs")
+cor_matrix <- cor(vars_for_correlations, use = "pairwise.complete.obs")
 
 cor_matrix
 
 write.xlsx(cor_matrix, "cor_matrix.xlsx")
+
+
+ # ----------- NOTE: not done yet here: --------- #
+
+# Calculating the t-statistic with the finite population correction factor
+r <- 0.3341475
+rho <- 0
+n <- 196
+N <- 949 # Number of included articles (= population size)
+
+t_corrected <- function(r, rho, n, N) {
+  t <- (r - rho)/(sqrt((1-r^2)/(n - 2))*sqrt((N-n)/(N-1)))
+  return(t)
+}
+
+# two-sided t-test
+p_value <- function(t_value, df) { 2 * (1 - pt(abs(t_value), df)) }
+
+
+# Run the t-test
+t_value <- t_corrected(r, rho, n, N)
+p <- p_value(t_value, df = n - 2)
+
 ```
 
 ## Plotting
