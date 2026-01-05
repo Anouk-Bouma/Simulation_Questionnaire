@@ -57,6 +57,8 @@ return(meta_group)
 
 ## Descriptives table
 
+-   New method variable is not added correctly yet
+
 ```{r}
 
 #' Title
@@ -188,7 +190,7 @@ descriptives_table <- create_question_table(data, meta, sample_sizes)
 
 ```{r}
 
-write.xlsx(descriptives_table, file = "test_table_desc.xlsx")
+#write.xlsx(descriptives_table, file = "test_table_desc.xlsx")
 ```
 
 ## Descriptives continues variables
@@ -242,7 +244,7 @@ cor_matrix <- cor(vars_for_correlations, use = "pairwise.complete.obs")
 
 cor_matrix
 
-write.xlsx(cor_matrix, "cor_matrix.xlsx")
+#write.xlsx(cor_matrix, "cor_matrix.xlsx")
 
 
  # ----------- NOTE: not done yet here: --------- #
@@ -403,8 +405,6 @@ plot_question <- function(
 ```
 
 ## Plot with percentages (instead of counts)
-
-<!--# This does not work yet. The function has a hard time deciding the number of participants per question. I need the number of participants per question for descriptives too. So maybe start with that tomorrow morning and then incorporate that into this function (or ideally combine the two functions together) -->
 
 ```{r}
 plot_question_percentage <- function(
