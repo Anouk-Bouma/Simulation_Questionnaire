@@ -634,13 +634,22 @@ plot_combined_multiselect <- function(
     geom_text(
       aes(label = label),
       position = position_dodge(width = 0.7),
-      hjust = -0.1,
-      size = 3
+      hjust = 1.05,
+      size = 3,
+      color = "black"
     ) +
     coord_flip() +
     scale_y_continuous(
-      limits = c(0, 100),
+      limits = c(0, 85),
       expand = expansion(mult = c(0, 0.1))
+    ) +
+    scale_fill_discrete(
+      name = "",
+      labels = c(
+        Q7 = "Conditions",
+        Q10 = "Methods",
+        Q13 = "Performance Measures"
+      )
     ) +
     scale_x_discrete(
       labels = ~ stringr::str_wrap(.x, wrap_width)
@@ -649,15 +658,15 @@ plot_combined_multiselect <- function(
       x = NULL,
       y = "Percentage of respondents",
       fill = "Question",
-      title = "Results weren't reported for all ... because of:"
+      title = "Results weren't reported for all conditions/methods/performance measures because of the intention to..."
     ) +
     theme_bw() +
     theme(
       plot.title = element_text(hjust = 0.5, face = "bold"),
       axis.text.y = element_text(hjust = 1),
-      legend.position = "top"
+      legend.position = "right" #NOTE change to coordinates later e.g., =c(.9,.75)
     )
 }
 
-
+plot_combined_multiselect(data, meta)
 ```
