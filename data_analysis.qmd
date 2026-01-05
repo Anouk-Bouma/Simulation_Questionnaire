@@ -16,6 +16,7 @@ library(stringr)
 library(purrr)
 library(writexl)
 library(openxlsx)
+library(forcats)
 ```
 
 ## Loading the data
@@ -545,5 +546,118 @@ for (i in 1:length(plot_questions)) {
   print(plot_question(data, meta, plot_questions[i]))
   print(plot_question_percentage(data, meta, plot_questions[i]))
 }
+
+```
+
+## Combined question plot
+
+```{r}
+
+plot_combined_multiselect <- function(
+  data = data,
+  metadata = meta,
+  combined_questions = c("Q7", "Q10", "Q13"),
+  wrap_width = 50
+) {
+
+  # ---- 1. Map combined → a/b versions ----
+  question_map <- tibble(
+    combined = rep(combined_questions, each = 2),
+    question_group = paste0(rep(combined_questions, each = 2), c("a", "b"))
+  )
+
+  meta_sel <- metadata %>%
+    inner_join(question_map, by = "question_group") %>%
+    arrange(combined, order)
+
+  # ---- 2. Compute sample sizes per a/b version ----
+  sample_sizes_ab <- meta_sel %>%
+    distinct(combined, question_group, question_code) %>%
+    group_by(combined, question_group) %>%
+    summarise(
+      n = sum(rowSums(!is.na(data[question_code])) > 0),
+      .groups = "drop"
+    )
+
+  sample_sizes <- sample_sizes_ab %>%
+    group_by(combined) %>%
+    summarise(sample_size = sum(n), .groups = "drop")
+
+  # ---- 3. Count selections (1 = selected, 0 = not, NA = not shown) ----
+  counts <- meta_sel %>%
+    select(combined, question_group, question_code, answer_label, order) %>%
+    left_join(
+      data %>%
+        pivot_longer(
+          cols = unique(meta_sel$question_code),
+          names_to = "question_code",
+          values_to = "value"
+        ) %>%
+        filter(value == 1) %>%
+        count(question_code, name = "freq"),
+      by = "question_code"
+    ) %>%
+    mutate(freq = replace_na(freq, 0)) %>%
+    group_by(combined, answer_label, order) %>%
+    summarise(freq = sum(freq), .groups = "drop")
+
+  # ---- 4. Combine & compute percentages ----
+  plot_data <- counts %>%
+    left_join(sample_sizes, by = "combined") %>%
+    mutate(
+      pct = 100 * freq / sample_size,
+      label = sprintf("%.1f%% (%d)", pct, freq),
+      combined = factor(combined, levels = combined_questions),
+      answer_label = factor(
+        answer_label,
+        levels = meta_sel %>%
+          arrange(order) %>%
+          distinct(answer_label) %>%
+          pull(answer_label)
+      )
+    )
+
+  # ---- 5. Plot ----
+  ggplot(
+    plot_data,
+    aes(
+      x = fct_rev(answer_label),
+      y = pct,
+      fill = combined
+    )
+  ) +
+    geom_col(
+      position = position_dodge(width = 0.7),
+      width = 0.6,
+      alpha = 0.8
+    ) +
+    geom_text(
+      aes(label = label),
+      position = position_dodge(width = 0.7),
+      hjust = -0.1,
+      size = 3
+    ) +
+    coord_flip() +
+    scale_y_continuous(
+      limits = c(0, 100),
+      expand = expansion(mult = c(0, 0.1))
+    ) +
+    scale_x_discrete(
+      labels = ~ stringr::str_wrap(.x, wrap_width)
+    ) +
+    labs(
+      x = NULL,
+      y = "Percentage of respondents",
+      fill = "Question",
+      title = "Results weren't reported for all ... because of:"
+    ) +
+    theme_bw() +
+    theme(
+      plot.title = element_text(hjust = 0.5, face = "bold"),
+      axis.text.y = element_text(hjust = 1),
+      legend.position = "top"
+    )
+}
+
 
 ```
