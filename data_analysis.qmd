@@ -645,7 +645,7 @@ plot_combined_multiselect <- function(
       aes(label = label),
       position = position_dodge(width = 0.8),
       hjust = -0.05,
-      size = 4,
+      size = 3.5,
       color = "black"
     ) +
     coord_flip() +
@@ -656,9 +656,9 @@ plot_combined_multiselect <- function(
     scale_fill_manual(
       name = "",
       values = c(
-        Q7  = "#F0E442",  
-        Q10 = "#0072B2",
-        Q13 = "#D55E00"   
+        Q7  = "#0072B2",
+        Q10 = "#D55E00",
+        Q13 = "#F0E442"   
       ),
       labels = c(
         Q7  = "Conditions",
@@ -678,10 +678,248 @@ plot_combined_multiselect <- function(
     theme_bw() +
     theme(
       plot.title = element_text(hjust = 0.5, face = "bold"),
-      axis.text.y = element_text(hjust = 1, size = 12, face = "bold"),
+      axis.text.y = element_text(hjust = 1, size = 10, face = "bold"),
       legend.position = "right" #NOTE change to coordinates later e.g., =c(.9,.75)
     )
 }
 
 plot_combined_multiselect(data, meta)
+```
+
+## Plot Combined Single Select (CAN BE DELETED?)
+
+```{r}
+plot_combined_singleselect <- function(
+  data = data,
+  metadata = meta,
+  combined_questions = c("Q5", "Q8", "Q11"),
+  wrap_width = 50
+) {
+
+  # ---- 1. Select relevant metadata ----
+  meta_sel <- metadata %>%
+    filter(question_group %in% combined_questions) %>%
+    arrange(question_group, order)
+
+  # ---- 2. Compute sample sizes (who SAW the question) ----
+  sample_sizes <- meta_sel %>%
+    distinct(question_group, question_code) %>%
+    group_by(question_group) %>%
+    summarise(
+      sample_size = sum(!is.na(data[[first(question_code)]])),
+      .groups = "drop"
+    ) %>%
+    rename(combined = question_group)
+
+  # ---- 3. Count selections ----
+  counts <- meta_sel %>%
+    select(combined = question_group, question_code, value, short_label, order) %>%
+    left_join(
+      data %>%
+        pivot_longer(
+          cols = unique(meta_sel$question_code),
+          names_to = "question_code",
+          values_to = "response"
+        ) %>%
+        filter(!is.na(response)) %>%
+        count(question_code, value = response, name = "freq"),
+      by = c("question_code", "value")
+    ) %>%
+    mutate(freq = replace_na(freq, 0))
+
+  # ---- 4. Compute percentages ----
+  plot_data <- counts %>%
+    left_join(sample_sizes, by = "combined") %>%
+    mutate(
+      pct = 100 * freq / sample_size,
+      label = sprintf("%.1f%% (%d)", pct, freq),
+      combined = factor(combined, levels = combined_questions),
+      short_label = factor(
+        short_label,
+        levels = meta_sel %>%
+          arrange(order) %>%
+          distinct(short_label) %>%
+          pull(short_label)
+      )
+    )
+
+  # ---- 5. Plot (same visual structure) ----
+  ggplot(
+    plot_data,
+    aes(
+      x = fct_rev(short_label),
+      y = pct,
+      fill = combined
+    )
+  ) +
+    geom_col(
+      position = position_dodge(width = 0.8),
+      width = 0.8,
+      alpha = 0.8,
+      color = "black",
+      linewidth = 0.3
+    ) +
+    geom_text(
+      aes(label = label),
+      position = position_dodge(width = 0.8),
+      hjust = -0.05,
+      size = 3.5,
+      color = "black"
+    ) +
+    coord_flip() +
+    scale_y_continuous(
+      limits = c(0, 100),
+      expand = expansion(mult = c(0, 0.1))
+    ) +
+    scale_fill_manual(
+      name = "",
+      values = c(
+        Q5  = "#0072B2",
+        Q8  = "#D55E00",
+        Q11 = "#F0E442"
+      ),
+      labels = c(
+        Q5  = "Conditions",
+        Q8  = "Methods",
+        Q11 = "Performance Measures"
+      )
+    ) +
+    scale_x_discrete(
+      labels = ~ stringr::str_wrap(.x, wrap_width)
+    ) +
+    labs(
+      x = NULL,
+      y = "Percentage of respondents",
+      title = str_wrap("Is at least one result reported for every condition/ method/performance measure that was part of the simulations?", 65)
+    ) +
+    theme_bw() +
+    theme(
+      plot.title = element_text(hjust = 0.5, face = "bold"),
+      axis.text.y = element_text(hjust = 1, size = 10, face = "bold"),
+      legend.position = "right"
+    )
+}
+
+```
+
+## Plot Combined Single Select Questions (Adjustable)
+
+```{r}
+plot_combined_singleselect <- function(
+  data = data,
+  metadata = meta,
+  combined_questions = c("Q5", "Q8", "Q11"),
+  legend_labels = c("Conditions", "Methods", "Performance Measures"),
+  title_plot = NULL,
+  wrap_width = 50
+) {
+
+  # ---- 1. Select relevant metadata ----
+  meta_sel <- metadata %>%
+    filter(question_group %in% combined_questions) %>%
+    arrange(question_group, order)
+
+  # ---- 2. Compute sample sizes (who SAW the question) ----
+  sample_sizes <- meta_sel %>%
+    distinct(question_group, question_code) %>%
+    group_by(question_group) %>%
+    summarise(
+      sample_size = sum(!is.na(data[[first(question_code)]])),
+      .groups = "drop"
+    ) %>%
+    rename(combined = question_group)
+
+  # ---- 3. Count selections ----
+  counts <- meta_sel %>%
+    select(combined = question_group, question_code, value, short_label, order) %>%
+    left_join(
+      data %>%
+        pivot_longer(
+          cols = unique(meta_sel$question_code),
+          names_to = "question_code",
+          values_to = "response"
+        ) %>%
+        filter(!is.na(response)) %>%
+        count(question_code, value = response, name = "freq"),
+      by = c("question_code", "value")
+    ) %>%
+    mutate(freq = replace_na(freq, 0))
+
+  # ---- 4. Compute percentages ----
+  plot_data <- counts %>%
+    left_join(sample_sizes, by = "combined") %>%
+    mutate(
+      pct = 100 * freq / sample_size,
+      label = sprintf("%.1f%% (%d)", pct, freq),
+      combined = factor(combined, levels = combined_questions),
+      short_label = factor(
+        short_label,
+        levels = meta_sel %>%
+          arrange(order) %>%
+          distinct(short_label) %>%
+          pull(short_label)
+      )
+    )
+
+  # ---- 5. Plot (same visual structure) ----
+  ggplot(
+    plot_data,
+    aes(
+      x = fct_rev(short_label),
+      y = pct,
+      fill = combined
+    )
+  ) +
+    geom_col(
+      position = position_dodge(width = 0.8),
+      width = 0.8,
+      alpha = 0.8,
+      color = "black",
+      linewidth = 0.3
+    ) +
+    geom_text(
+      aes(label = label),
+      position = position_dodge(width = 0.8),
+      hjust = -0.05,
+      size = 3.5,
+      color = "black"
+    ) +
+    coord_flip() +
+    scale_y_continuous(
+      limits = c(0, 100),
+      expand = expansion(mult = c(0, 0.1))
+    ) +
+    scale_fill_manual(
+  name = "",
+  values = setNames(
+    c("#0072B2", "#D55E00", "#F0E442"),
+    combined_questions
+  ),
+  labels = setNames(
+    legend_labels,
+    combined_questions
+  )
+    ) +
+    scale_x_discrete(
+      labels = ~ stringr::str_wrap(.x, wrap_width)
+    ) +
+    labs(
+      x = NULL,
+      y = "Percentage of respondents",
+      title = str_wrap(title_plot, 65)
+    ) +
+    theme_bw() +
+    theme(
+      plot.title = element_text(hjust = 0.5, face = "bold"),
+      axis.text.y = element_text(hjust = 1, size = 10, face = "bold"),
+      legend.position = "right"
+    )
+}
+```
+
+## Plots single select calls
+
+```{r}
+
+plot_combined_singleselect(data, meta, combined_questions = c("Q6", "Q9", "Q12"), title_plot = "Does the body of the paper report at least one result for every condition/method/performance measure?")
 ```
