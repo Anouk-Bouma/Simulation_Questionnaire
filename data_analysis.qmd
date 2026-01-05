@@ -627,13 +627,15 @@ plot_combined_multiselect <- function(
     )
   ) +
     geom_col(
-      position = position_dodge(width = 0.7),
-      width = 0.6,
-      alpha = 0.8
+      position = position_dodge(width = 0.8),
+      width = 0.8, #thickness of bars
+      alpha = 0.8,
+      color = "black", #outline color of bars
+      linewidth = 0.3
     ) +
     geom_text(
       aes(label = label),
-      position = position_dodge(width = 0.7),
+      position = position_dodge(width = 0.8),
       hjust = 1.05,
       size = 3,
       color = "black"
@@ -643,10 +645,15 @@ plot_combined_multiselect <- function(
       limits = c(0, 85),
       expand = expansion(mult = c(0, 0.1))
     ) +
-    scale_fill_discrete(
+    scale_fill_manual(
       name = "",
+      values = c(
+        Q7  = "#4E79A7",  # blue
+        Q10 = "#F28E2B",  # orange
+        Q13 = "#59A14F"   # green
+      ),
       labels = c(
-        Q7 = "Conditions",
+        Q7  = "Conditions",
         Q10 = "Methods",
         Q13 = "Performance Measures"
       )
