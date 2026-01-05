@@ -551,6 +551,14 @@ for (i in 1:length(plot_questions)) {
 
 ## Combined question plot
 
+-   freq van 0 wordt niet met tekst weergegeven
+
+-   freq van 1 wordt afgesneden
+
+-   Volgorde bars komt niet overeen met legenda
+
+-   Sample size per vraag nog toevoegen (in de legenda)?
+
 ```{r}
 
 plot_combined_multiselect <- function(
@@ -585,7 +593,7 @@ plot_combined_multiselect <- function(
 
   # ---- 3. Count selections (1 = selected, 0 = not, NA = not shown) ----
   counts <- meta_sel %>%
-    select(combined, question_group, question_code, answer_label, order) %>%
+    select(combined, question_group, question_code, short_label, order) %>%
     left_join(
       data %>%
         pivot_longer(
@@ -598,7 +606,7 @@ plot_combined_multiselect <- function(
       by = "question_code"
     ) %>%
     mutate(freq = replace_na(freq, 0)) %>%
-    group_by(combined, answer_label, order) %>%
+    group_by(combined, short_label, order) %>%
     summarise(freq = sum(freq), .groups = "drop")
 
   # ---- 4. Combine & compute percentages ----
@@ -608,12 +616,12 @@ plot_combined_multiselect <- function(
       pct = 100 * freq / sample_size,
       label = sprintf("%.1f%% (%d)", pct, freq),
       combined = factor(combined, levels = combined_questions),
-      answer_label = factor(
-        answer_label,
+      short_label = factor(
+        short_label,
         levels = meta_sel %>%
           arrange(order) %>%
-          distinct(answer_label) %>%
-          pull(answer_label)
+          distinct(short_label) %>%
+          pull(short_label)
       )
     )
 
@@ -621,7 +629,7 @@ plot_combined_multiselect <- function(
   ggplot(
     plot_data,
     aes(
-      x = fct_rev(answer_label),
+      x = fct_rev(short_label),
       y = pct,
       fill = combined
     )
@@ -636,8 +644,8 @@ plot_combined_multiselect <- function(
     geom_text(
       aes(label = label),
       position = position_dodge(width = 0.8),
-      hjust = 1.05,
-      size = 3,
+      hjust = -0.05,
+      size = 4,
       color = "black"
     ) +
     coord_flip() +
@@ -648,9 +656,9 @@ plot_combined_multiselect <- function(
     scale_fill_manual(
       name = "",
       values = c(
-        Q7  = "#4E79A7",  # blue
-        Q10 = "#F28E2B",  # orange
-        Q13 = "#59A14F"   # green
+        Q7  = "#F0E442",  
+        Q10 = "#0072B2",
+        Q13 = "#D55E00"   
       ),
       labels = c(
         Q7  = "Conditions",
@@ -670,7 +678,7 @@ plot_combined_multiselect <- function(
     theme_bw() +
     theme(
       plot.title = element_text(hjust = 0.5, face = "bold"),
-      axis.text.y = element_text(hjust = 1),
+      axis.text.y = element_text(hjust = 1, size = 12, face = "bold"),
       legend.position = "right" #NOTE change to coordinates later e.g., =c(.9,.75)
     )
 }
