@@ -686,7 +686,7 @@ plot_combined_multiselect <- function(
 plot_combined_multiselect(data, meta)
 ```
 
-## Plot Combined Single Select (CAN BE DELETED?)
+## Plot Combined Single Select (DELETE)
 
 ```{r}
 plot_combined_singleselect <- function(
@@ -802,7 +802,7 @@ plot_combined_singleselect <- function(
 
 ```
 
-## Plot Combined Single Select Questions (Adjustable)
+## Plot Combined Single Select Questions (DELETE)
 
 ```{r}
 plot_combined_singleselect <- function(
@@ -917,9 +917,184 @@ plot_combined_singleselect <- function(
 }
 ```
 
+## One combined function for all plots
+
+```{r}
+plot_combined_questions <- function(
+  data,
+  metadata,
+  combined_questions,
+  legend_labels = c("Conditions", "Methods", "Performance Measures"),
+  title_plot = combined_questions,
+  combine_ab = FALSE,
+  wrap_width = 50,
+  colors = c("#0072B2", "#D55E00", "#F0E442"),
+  y_max = 100,
+  show_legend = length(combined_questions) > 1
+) {
+
+  # ---- 1. Select & (optionally) map a/b versions ----
+  if (combine_ab) {
+
+    question_map <- tibble(
+      combined = rep(combined_questions, each = 2),
+      question_group = paste0(rep(combined_questions, each = 2), c("a", "b"))
+    )
+
+    meta_sel <- metadata %>%
+      inner_join(question_map, by = "question_group") %>%
+      arrange(combined, order)
+
+  } else {
+
+    meta_sel <- metadata %>%
+      filter(question_group %in% combined_questions) %>%
+      mutate(combined = question_group) %>%
+      arrange(combined, order)
+  }
+
+  # ---- 2. Sample sizes (who SAW the question) ----
+  if (combine_ab) {
+
+    sample_sizes_ab <- meta_sel %>%
+      distinct(combined, question_group, question_code) %>%
+      group_by(combined, question_group) %>%
+      summarise(
+        n = sum(rowSums(!is.na(data[question_code])) > 0),
+        .groups = "drop"
+      )
+
+    sample_sizes <- sample_sizes_ab %>%
+      group_by(combined) %>%
+      summarise(sample_size = sum(n), .groups = "drop")
+
+  } else {
+
+    sample_sizes <- meta_sel %>%
+      distinct(combined, question_code) %>%
+      group_by(combined) %>%
+      summarise(
+        sample_size = sum(!is.na(data[[first(question_code)]])),
+        .groups = "drop"
+      )
+  }
+
+  # ---- 3. Count selections ----
+  long_data <- data %>%
+    pivot_longer(
+      cols = unique(meta_sel$question_code),
+      names_to = "question_code",
+      values_to = "value"
+    )
+
+  if (combine_ab) {
+    long_data <- long_data %>% filter(value == 1)
+  } else {
+    long_data <- long_data %>% filter(!is.na(value))
+  }
+
+  counts <- meta_sel %>%
+    select(combined, question_code, short_label, order, value) %>%
+    left_join(
+      long_data %>%
+        count(question_code, value, name = "freq"),
+      by = c("question_code", "value")
+    ) %>%
+    mutate(freq = replace_na(freq, 0)) %>%
+    group_by(combined, short_label, order) %>%
+    summarise(freq = sum(freq), .groups = "drop")
+
+  # ---- 4. Percentages & factors ----
+  plot_data <- counts %>%
+    left_join(sample_sizes, by = "combined") %>%
+    mutate(
+      pct = 100 * freq / sample_size,
+      label = sprintf("%.1f%% (%d)", pct, freq),
+      combined = factor(combined, levels = combined_questions),
+      short_label = factor(
+        short_label,
+        levels = meta_sel %>%
+          arrange(order) %>%
+          distinct(short_label) %>%
+          pull(short_label)
+      )
+    )
+
+  # ---- 5. Plot ----
+  ggplot(
+    plot_data,
+    aes(
+      x = fct_rev(short_label),
+      y = pct,
+      fill = combined
+    )
+  ) +
+    geom_col(
+      position = position_dodge(width = 0.8),
+      width = 0.8,
+      alpha = 0.8,
+      color = "black",
+      linewidth = 0.3
+    ) +
+    geom_text(
+      aes(label = label),
+      position = position_dodge(width = 0.8),
+      hjust = -0.05,
+      size = 3.5
+    ) +
+    coord_flip() +
+    scale_y_continuous(
+      limits = c(0, y_max),
+      expand = expansion(mult = c(0, 0.1))
+    ) +
+    scale_fill_manual(
+      values = setNames(colors, combined_questions),
+      labels = setNames(legend_labels, combined_questions),
+      name = ""
+    ) +
+    scale_x_discrete(
+      labels = ~ stringr::str_wrap(.x, wrap_width)
+    ) +
+    labs(
+      x = NULL,
+      y = "Percentage of respondents",
+      title = if (!is.null(title_plot)) stringr::str_wrap(title_plot, 65)
+    ) +
+    theme_bw() +
+    theme(
+      plot.title = element_text(hjust = 0.5, face = "bold"),
+      axis.text.y = element_text(hjust = 1, size = 10, face = "bold"),
+      legend.position = if (show_legend) "right" else "none"
+    )
+}
+
+```
+
 ## Plots single select calls
 
 ```{r}
 
-plot_combined_singleselect(data, meta, combined_questions = c("Q6", "Q9", "Q12"), title_plot = "Does the body of the paper report at least one result for every condition/method/performance measure?")
+# ...
+plot_combined_questions()
+
+# Question 16
+plot_combined_questions(data, 
+                        meta, 
+                        combined_questions = "Q16", 
+                        combine_ab = TRUE, 
+                        colors = "#D55E00",
+                        title_plot = "The number of missing values/nonconvergent iterations wasn't reported because...",
+                        y_max = 60,
+                        wrap_width = 40) #NOTE: THIS DOESNT WORK YET
+
+plot_combined_questions(data, 
+                        meta, 
+                        combined_questions = "Q20", 
+                        combine_ab = FALSE, 
+                        colors = "#D55E00",
+                        title_plot = "The number of missing values/nonconvergent iterations wasn't reported because...",
+                        y_max = 60,
+                        wrap_width = 40) #NOTE: THIS DOESNT WORK YET
 ```
+
+## 
