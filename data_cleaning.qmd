@@ -147,50 +147,118 @@ data <- data %>%
 
 
 ####
-# Addition of new answer categories based on themes found in open answers (see codebook for details)
+# Addition of new answer categories based on themes found in open answers (NOTE see codebook for details)
 # For participants where their answer option in the 'other' answer option is assigned to a new category, their score for the option 'other' is recoded as a 8 (see codebook). 
-# Note that coding 'other' answers to 8 is done per category, not per question to keep the code as easily interpretable as possible.
+# Note that coding 'other' answers to 8 is done per newly added answer category, not per question to keep the code as easily interpretable as possible.
+
 data <- data %>%
-  mutate(
-    Q16a_16_NEW = if_else(ID %in% c("id9", "id69"), 1, NA_real_), # Keyword: Not Applicable
-    Q16a_15 = if_else(ID %in% c("id9", "id69"), 8, Q16a_15), # Q16a_15 is option 'other' -> changed to 8 (see codebook)
-    .after = "Q16a_15_TEXT" # Q16a_15_NEW is placed after the last Q16 column
+  mutate( # Keyword: Not Applicable
+    Q16a_16_NEW = if_else(
+      ID %in% c("id9", "id69"), 
+      1, 
+      NA_real_),
+    # Q16a_15 is option 'other' -> changed to 8 (see codebook)
+    Q16a_15 = if_else(
+      ID %in% c("id9", "id69"), 
+      8, 
+      Q16a_15),
+    # Q16a_16_NEW is placed after the last Q16 column
+    .after = "Q16a_15_TEXT" 
     ) %>%
-  mutate(
-    Q18a_11_NEW = if_else(ID %in% c("id9", "id156", "id161", "id108", "id139"), 1, NA_real_), # Keyword: Not Applicable
-    Q18a_10 = if_else(ID %in% c("id9", "id156", "id161", "id108", "id139"), 8, Q18a_10),
+  mutate( # Keyword: Not Applicable
+    Q18a_11_NEW = if_else(
+      ID %in% c("id9", "id156", "id161", "id108", "id139"), 
+      1, 
+      NA_real_), 
+    Q18a_10 = if_else(
+      ID %in% c("id9", "id156", "id161", "id108", "id139"), 
+      8, 
+      Q18a_10),
     .after = "Q18a_10_TEXT"
     ) %>%
-  mutate(
-    Q16a_17_NEW = if_else(ID %in% c("id108", "id129", "id197", "id210"), 1, NA_real_), # Keyword: Low Occurrence
-    Q16a_15 = if_else(ID %in% c("id108", "id129", "id197", "id210"), 8, Q16a_15),
+  mutate( # Keyword: Low Occurrence
+    Q16a_17_NEW = if_else(
+      ID %in% c("id108", "id129", "id197", "id210"), 
+      1, 
+      NA_real_), 
+    Q16a_15 = if_else(
+      ID %in% c("id108", "id129", "id197", "id210"), 
+      8, 
+      Q16a_15),
     .after = "Q16a_16_NEW"
     ) %>%
-  mutate(
-    Q18a_12_NEW = if_else(ID %in% c("id92", "id158"), 1, NA_real_), # Keyword: Uncommon
-    Q18a_10 = if_else(ID %in% c("id92", "id158"), 8, Q18a_10),
+  mutate( # Keyword: Uncommon
+    Q18a_12_NEW = if_else(
+      ID %in% c("id92", "id158"), 
+      1, 
+      NA_real_), 
+    Q18a_10 = if_else(
+      ID %in% c("id92", "id158"), 
+      8, 
+      Q18a_10),
     .after = "Q18a_11_NEW"
     ) %>%
-  mutate(
-    Q18a_13_NEW = if_else(ID %in% c("id60", "id71", "id137", "id178"), 1, NA_real_), # Keyword: Alternative Check
-    Q18a_10 = if_else(ID %in% c("id60", "id71", "id137", "id178"), 8, Q18a_10),
+  mutate( # Keyword: Alternative Check
+    Q18a_13_NEW = if_else(
+      ID %in% c("id60", "id71", "id137", "id178"), 
+      1, 
+      NA_real_), 
+    Q18a_10 = if_else(
+      ID %in% c("id60", "id71", "id137", "id178"), 
+      8, 
+      Q18a_10),
     .after = "Q18a_12_NEW"
     ) %>%
-  mutate(
-    Q20_9_NEW = if_else(ID %in% c("id27", "id36", "id105", "id165", "id191", "id204"), 1, NA_real_), # Keyword: Field
-    Q20_8 = if_else(ID %in% c("id27", "id36", "id105", "id165", "id191", "id204"), 8, Q20_8),
+  mutate( # Keyword: Field
+    Q20_9_NEW = if_else(
+      ID %in% c("id27", "id36", "id105", "id165", "id191", "id204"), 
+      1, 
+      NA_real_), 
+    Q20_8 = if_else(
+      ID %in% c("id27", "id36", "id105", "id165", "id191", "id204"), 
+      8, 
+      Q20_8),
     .after = "Q20_8_TEXT"
     ) %>%
-  mutate(
-    Q20_10_NEW = if_else(ID %in% c("id35", "id36", "id43", "id135", "id140"), 1, NA_real_), # Keyword: Experience
-    Q20_8 = if_else(ID %in% c("id35", "id36", "id43", "id135", "id140"), 8, Q20_8),
+  mutate( # Keyword: Experience
+    Q20_10_NEW = if_else(
+      ID %in% c("id35", "id36", "id43", "id135", "id140"), 
+      1, 
+      NA_real_), 
+    Q20_8 = if_else(
+      ID %in% c("id35", "id36", "id43", "id135", "id140"), 
+      8, 
+      Q20_8),
     .after = "Q20_9_NEW"
     ) %>%
-  mutate(
-    Q20_11_NEW = if_else(ID %in% c("id161", "id165", "id188", "id213"), 1, NA_real_), # Keyword: Not Available
-    Q20_8 = if_else(ID %in% c("id161", "id165", "id188", "id213"), 8, Q20_8),
+  mutate( # Keyword: Not Available
+    Q20_11_NEW = if_else(
+      ID %in% c("id161", "id165", "id188", "id213"), 
+      1, 
+      NA_real_), 
+    Q20_8 = if_else(
+      ID %in% c("id161", "id165", "id188", "id213"), 
+      8, 
+      Q20_8),
     .after = "Q20_10_NEW"
     )
+
+# Adding the same new categories to the b-versions of each respective question to aid data analysis later on.
+data <- data %>%
+  mutate(
+    Q16b_16_NEW = NA,
+    Q16b_17_NEW = NA,
+    .after = Q16b_15_TEXT
+  )
+
+# HIER NOG EVEN NAAR KIJKEN 
+# data <- data %>%
+#   mutate(
+#     Q18b_11_NEW = NA,
+#     Q18b_12_NEW = NA,
+#     Q18b_13_NEW = NA,
+#     .after = Q18b_9_TEXT
+#   )
 
 # Changing existing answers (that are clearly wrong) based on open answers
 # All open answers and rationale for changing answers can be found in the supplemental materials
