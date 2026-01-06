@@ -486,28 +486,6 @@ p7_10_13 <- plot_combined_questions(data,
 
 
 # Topic 2.4: Missing values/nonconvergence
-p14 <- plot_combined_questions(data,
-                               meta,
-                               combined_questions = "Q14",
-                               combine_ab = FALSE,
-                               colors = "#D55E00",
-                               title_plot = "Is the number of missings/nonconv iters reported?",
-                               y_max = 100,
-                               wrap_width = 80)
-
-p15 <- plot_combined_questions(data,
-                               meta,
-                               combined_questions = "Q15",
-                               combine_ab = FALSE,
-                               colors = "#D55E00",
-                               title_plot = "Does the body of the paper report the number of missings/nonconv iters?",
-                               y_max = 100,
-                               wrap_width = 80)
-
-topic_24 <- ggarrange(p14, p15, nrow = 2)
-#plot(topic_24)
-
-
 p16 <- plot_combined_questions(data,
                                meta,
                                combined_questions = "Q16",
@@ -516,19 +494,8 @@ p16 <- plot_combined_questions(data,
                                title_plot = "The number of missing values/nonconvergent iterations wasn't reported because...",
                                y_max = 75,
                                wrap_width = 80)
-#plot(p16)
-
 
 # Topic 2.5: MCSE
-p17 <- plot_combined_questions(data, 
-                        meta, 
-                        combined_questions = "Q17", 
-                        combine_ab = FALSE, 
-                        colors = "#D55E00",
-                        title_plot = "Were results accompanied by their MCSE's?",
-                        y_max = 100,
-                        wrap_width = 80)
-
 p18 <- plot_combined_questions(data, 
                         meta, 
                         combined_questions = "Q18", 
@@ -539,16 +506,6 @@ p18 <- plot_combined_questions(data,
                         wrap_width = 80) 
 
 # Topic 2.6: Guidelines
-p19 <- plot_combined_questions(data, 
-                        meta, 
-                        combined_questions = "Q19", 
-                        combine_ab = FALSE, 
-                        colors = "#D55E00",
-                        title_plot = "Which research guideline was used?", #Edited for clarity in plot
-                        y_max = 100,
-                        wrap_width = 80) 
-
-
 p20 <- plot_combined_questions(data, 
                         meta, 
                         combined_questions = "Q20", 
@@ -559,15 +516,6 @@ p20 <- plot_combined_questions(data,
                         wrap_width = 80)
 
 # Topic 2.7: Preregistration
-p21 <- plot_combined_questions(data, 
-                        meta, 
-                        combined_questions = "Q21", 
-                        combine_ab = FALSE, 
-                        colors = "#D55E00",
-                        title_plot = "Was (part of) your simulation study preregistered?",
-                        y_max = 100,
-                        wrap_width = 80)
- 
 p22 <- plot_combined_questions(data, 
                         meta, 
                         combined_questions = "Q22", 
@@ -577,19 +525,28 @@ p22 <- plot_combined_questions(data,
                         y_max = 75,
                         wrap_width = 80) 
 
-
-ggarrange(topic_24, p16, p17, p18, p19, p20, p21, p22, nrow = 4, ncol = 2)
-
-
-plot_combined_questions(data, 
+# Topic 2.8: Open code
+p24 <- plot_combined_questions(data, 
                         meta, 
                         combined_questions = "Q24", 
                         combine_ab = FALSE, 
                         colors = "#D55E00",
                         title_plot = "Why is not all code openly available?",
                         y_max = 100,
-                        wrap_width = 40) 
+                        wrap_width = 80)
 
+# Topic 2.9: Open code
+p25 <- plot_combined_questions(data, 
+                        meta, 
+                        combined_questions = "Q25", 
+                        combine_ab = FALSE, 
+                        colors = "#D55E00",
+                        title_plot = "Which measures were taken for computational reproducibility?",
+                        y_max = 100,
+                        wrap_width = 80)
+
+
+ggarrange(p16, p18, p20, p22, p24, p25, nrow = 3, ncol = 2)
 
 ```
 

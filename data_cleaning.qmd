@@ -251,14 +251,33 @@ data <- data %>%
     .after = Q16b_15_TEXT
   )
 
-# HIER NOG EVEN NAAR KIJKEN 
-# data <- data %>%
-#   mutate(
-#     Q18b_11_NEW = NA,
-#     Q18b_12_NEW = NA,
-#     Q18b_13_NEW = NA,
-#     .after = Q18b_9_TEXT
-#   )
+# Renaming column names for 18b and adding a column to represent the first option for 18a (that was not part of 18b), to aid plotting.
+
+data <- data %>%
+  rename(
+    Q18b_2 = Q18b_1, #Q18b_1 becomes Q18b_2
+    Q18b_3 = Q18b_2,
+    Q18b_4 = Q18b_3,
+    Q18b_5 = Q18b_4,
+    Q18b_6 = Q18b_5,
+    Q18b_7 = Q18b_6,
+    Q18b_8 = Q18b_7,
+    Q18b_9 = Q18b_8,
+    Q18b_10 = Q18b_9,
+    Q18b_10_TEXT = Q18b_9_TEXT
+  )
+
+
+data <- data %>%
+  mutate(
+    Q18b_1 = NA,
+    .before = Q18b_2) %>%
+  mutate(
+    Q18b_11_NEW = NA,
+    Q18b_12_NEW = NA,
+    Q18b_13_NEW = NA,
+    .after = Q18b_10_TEXT
+  )
 
 # Changing existing answers (that are clearly wrong) based on open answers
 # All open answers and rationale for changing answers can be found in the supplemental materials
