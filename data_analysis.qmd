@@ -17,6 +17,8 @@ library(purrr)
 library(writexl)
 library(openxlsx)
 library(forcats)
+library(egg)
+library(ggpubr)
 ```
 
 ## Loading the data
@@ -285,7 +287,7 @@ For every question, there have to be the following plots:
 
 -   n in the title of the plots
 
-## Specifying function for plots per question
+## Specifying function for plots per question (DELETE)
 
 ```{r}
 
@@ -405,7 +407,7 @@ plot_question <- function(
 
 ```
 
-## Plot with percentages (instead of counts)
+## Plot with percentages (instead of counts) (DELETE)
 
 ```{r}
 plot_question_percentage <- function(
@@ -535,7 +537,7 @@ plot_question_percentage <- function(
 
 ```
 
-## Making some plots
+## Making some plots (DELETE)
 
 ```{r}
 
@@ -549,7 +551,7 @@ for (i in 1:length(plot_questions)) {
 
 ```
 
-## Combined question plot
+## Combined question plot (DELETE???? Check eerst of de nieuwe functie ook hiervoor goed werkt)
 
 -   freq van 0 wordt niet met tekst weergegeven
 
@@ -1057,44 +1059,170 @@ plot_combined_questions <- function(
     ) +
     labs(
       x = NULL,
-      y = "Percentage of respondents",
-      title = if (!is.null(title_plot)) stringr::str_wrap(title_plot, 65)
+      y = "Percentage",
+      title = if (!is.null(title_plot)) stringr::str_wrap(title_plot, wrap_width)
     ) +
     theme_bw() +
     theme(
-      plot.title = element_text(hjust = 0.5, face = "bold"),
-      axis.text.y = element_text(hjust = 1, size = 10, face = "bold"),
+      plot.title = element_text(hjust = 0.5, size = 10, face = "bold"),
+      axis.title.x = element_text(size = 8),
+      axis.text.y = element_text(hjust = 1, size = 8, face = "bold"),
       legend.position = if (show_legend) "right" else "none"
     )
 }
 
 ```
 
-## Plots single select calls
+## All Plots
 
 ```{r}
 
-# ...
-plot_combined_questions()
+# Section 2: Reporting
 
-# Question 16
-plot_combined_questions(data, 
+# Plot for question 5, 8 and 11
+
+p5_8_11 <- plot_combined_questions(data,
+                               meta,
+                               combined_questions = c("Q5", "Q8", "Q11"),
+                               combine_ab = FALSE,
+                               title_plot = "Is at least one result reported for every condition/method/performance measure that was part of the simulations?",
+                               y_max = 100,
+                               wrap_width = 80)
+
+# Plot for question 6, 9, and 12
+
+p6_9_12 <- plot_combined_questions(data,
+                               meta,
+                               combined_questions = c("Q6", "Q9", "Q12"),
+                               combine_ab = FALSE,
+                               title_plot = "Does the body of the paper report at least one result for every [Legend]",
+                               y_max = 100,
+                               wrap_width = 80)
+
+
+# Plot for question 7, 10, and 13
+
+p7_10_13 <- plot_combined_questions(data,
+                               meta,
+                               combined_questions = c("Q7", "Q10", "Q13"),
+                               combine_ab = TRUE,
+                               title_plot = "Results weren't reported for all [Legend] because...",
+                               y_max = 100,
+                               wrap_width = 80)
+
+
+# split_combined <- ggarrange(p5_8_11, p6_9_12, nrow = 2)
+# ggarrange(split_combined, p7_10_13, nrow = 1)
+
+
+
+
+# Topic 2.4: Missing values/nonconvergence
+p14 <- plot_combined_questions(data,
+                               meta,
+                               combined_questions = "Q14",
+                               combine_ab = FALSE,
+                               colors = "#D55E00",
+                               title_plot = "Is the number of missings/nonconv iters reported?",
+                               y_max = 100,
+                               wrap_width = 80)
+
+p15 <- plot_combined_questions(data,
+                               meta,
+                               combined_questions = "Q15",
+                               combine_ab = FALSE,
+                               colors = "#D55E00",
+                               title_plot = "Does the body of the paper report the number of missings/nonconv iters?",
+                               y_max = 100,
+                               wrap_width = 80)
+
+topic_24 <- ggarrange(p14, p15, nrow = 2)
+#plot(topic_24)
+
+
+p16 <- plot_combined_questions(data,
+                               meta,
+                               combined_questions = "Q16",
+                               combine_ab = TRUE,
+                               colors = "#D55E00",
+                               title_plot = "The number of missing values/nonconvergent iterations wasn't reported because...",
+                               y_max = 75,
+                               wrap_width = 80)
+#plot(p16)
+
+
+# Topic 2.5: MCSE
+p17 <- plot_combined_questions(data, 
                         meta, 
-                        combined_questions = "Q16", 
+                        combined_questions = "Q17", 
+                        combine_ab = FALSE, 
+                        colors = "#D55E00",
+                        title_plot = "Were results accompanied by their MCSE's?",
+                        y_max = 100,
+                        wrap_width = 80)
+
+p18 <- plot_combined_questions(data, 
+                        meta, 
+                        combined_questions = "Q18", 
                         combine_ab = TRUE, 
                         colors = "#D55E00",
-                        title_plot = "The number of missing values/nonconvergent iterations wasn't reported because...",
-                        y_max = 60,
-                        wrap_width = 40) #NOTE: THIS DOESNT WORK YET
+                        title_plot = "MCSE's weren't reported because...",
+                        y_max = 75,
+                        wrap_width = 80) 
 
-plot_combined_questions(data, 
+# Topic 2.6: Guidelines
+p19 <- plot_combined_questions(data, 
+                        meta, 
+                        combined_questions = "Q19", 
+                        combine_ab = FALSE, 
+                        colors = "#D55E00",
+                        title_plot = "Which research guideline was used?", #Edited for clarity in plot
+                        y_max = 100,
+                        wrap_width = 80) 
+
+
+p20 <- plot_combined_questions(data, 
                         meta, 
                         combined_questions = "Q20", 
                         combine_ab = FALSE, 
                         colors = "#D55E00",
-                        title_plot = "The number of missing values/nonconvergent iterations wasn't reported because...",
-                        y_max = 60,
-                        wrap_width = 40) #NOTE: THIS DOESNT WORK YET
+                        title_plot = "Why was no research guideline used?",
+                        y_max = 75,
+                        wrap_width = 80)
+
+# Topic 2.7: Preregistration
+p21 <- plot_combined_questions(data, 
+                        meta, 
+                        combined_questions = "Q21", 
+                        combine_ab = FALSE, 
+                        colors = "#D55E00",
+                        title_plot = "Was (part of) your simulation study preregistered?",
+                        y_max = 100,
+                        wrap_width = 80)
+ 
+p22 <- plot_combined_questions(data, 
+                        meta, 
+                        combined_questions = "Q22", 
+                        combine_ab = FALSE, 
+                        colors = "#D55E00",
+                        title_plot = "Why wasn't the simulation study preregistered?",
+                        y_max = 75,
+                        wrap_width = 80) 
+
+
+ggarrange(topic_24, p16, p17, p18, p19, p20, p21, p22, nrow = 4, ncol = 2)
+
+
+plot_combined_questions(data, 
+                        meta, 
+                        combined_questions = "Q24", 
+                        combine_ab = FALSE, 
+                        colors = "#D55E00",
+                        title_plot = "Why is not all code openly available?",
+                        y_max = 100,
+                        wrap_width = 40) 
+
+
 ```
 
 ## 
