@@ -503,7 +503,7 @@ p18 <- plot_combined_questions(data,
                         combined_questions = "Q18", 
                         combine_ab = TRUE, 
                         colors = "#D55E00",
-                        title_plot = "MCSE's weren't reported because...",
+                        title_plot = "MCSE's weren't reported (for all results) because...",
                         y_max = 75,
                         wrap_width = 80) 
 
