@@ -38,6 +38,8 @@ meta <- read.xlsx("question_labels.xlsx", sheet = "codebook")
 
 ```{r}
 
+#NOTE, check if this function can be removed
+
 sample_sizes <- meta %>%
   distinct(question_group, question_code) %>%
   arrange(question_group) %>%
@@ -193,7 +195,7 @@ descriptives_table <- create_question_table(data, meta, sample_sizes)
 
 ```{r}
 
-write.xlsx(descriptives_table, file = "test_table_desc.xlsx")
+#write.xlsx(descriptives_table, file = "test_table_desc.xlsx")
 ```
 
 ## Descriptives continues variables
@@ -545,8 +547,8 @@ p25 <- plot_combined_questions(data,
                         y_max = 100,
                         wrap_width = 80)
 
-
-ggarrange(p16, p18, p20, p22, p24, p25, nrow = 3, ncol = 2)
+ggarrange(p20, p24, p22, p25, nrow = 2, ncol = 2)
+ggarrange(p16, p18, nrow = 1, ncol = 2)
 
 ```
 
