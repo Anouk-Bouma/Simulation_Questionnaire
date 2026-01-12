@@ -4,6 +4,8 @@ format: html
 editor: visual
 ---
 
+<!--# Hey bestie, before submitting the final version -> ctrl + f: 'NOTE' to check if all notes are evaluated and removed -->
+
 ## Version Control
 
 ```{r}
@@ -32,37 +34,32 @@ load("survey_data_cleaned.RData")
 meta <- read.xlsx("question_labels.xlsx", sheet = "codebook")
 ```
 
-## Descriptives
-
--   
+## Sample sizes per question
 
 ```{r}
-
-#NOTE, check if this function can be removed
 
 sample_sizes <- meta %>%
   distinct(question_group, question_code) %>%
   arrange(question_group) %>%
   group_by(question_group) %>%
   summarise(
-    sample_col = first(question_code),
-    n = sum(!is.na(data[[sample_col]])),
+    sample_col = {
+      counts <- sapply(question_code, function(col) {
+        sum(!is.na(data[[col]]))
+      })
+      question_code[which(counts > 0)[1]]
+    },
+    n = {
+      counts <- sapply(question_code, function(col) {
+        sum(!is.na(data[[col]]))
+      })
+      counts[which(counts > 0)[1]]
+    },
     .groups = "drop"
   )
-
-# Function to get answer options per question (NOTE: not needed anymore)
-get_question_columns <- function(metadata = meta, question) {
-meta_group <- metadata %>%
-    filter(question_group == question) %>%
-    arrange(order)
-
-return(meta_group)
-}
 ```
 
 ## Descriptives table
-
--   New method variable is not added correctly yet
 
 ```{r}
 
@@ -195,7 +192,7 @@ descriptives_table <- create_question_table(data, meta, sample_sizes)
 
 ```{r}
 
-#write.xlsx(descriptives_table, file = "test_table_desc.xlsx")
+write.xlsx(descriptives_table, file = "test_table_desc.xlsx")
 ```
 
 ## Descriptives continues variables
