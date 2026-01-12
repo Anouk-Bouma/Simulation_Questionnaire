@@ -292,8 +292,9 @@ For every question, there have to be the following plots:
 
 ```{r}
 plot_combined_questions <- function(
-  data,
-  metadata,
+  data = data,
+  metadata = meta,
+  sample_sizes = sample_sizes,
   combined_questions,
   legend_labels = c("Conditions", "Methods", "Performance Measures"),
   title_plot = combined_questions,
@@ -306,50 +307,36 @@ plot_combined_questions <- function(
 
   # ---- 1. Select & (optionally) map a/b versions ----
   if (combine_ab) {
-
     question_map <- tibble(
       combined = rep(combined_questions, each = 2),
       question_group = paste0(rep(combined_questions, each = 2), c("a", "b"))
     )
-
+    
     meta_sel <- metadata %>%
       inner_join(question_map, by = "question_group") %>%
       arrange(combined, order)
-
   } else {
-
     meta_sel <- metadata %>%
       filter(question_group %in% combined_questions) %>%
       mutate(combined = question_group) %>%
       arrange(combined, order)
   }
 
-  # ---- 2. Sample sizes (who SAW the question) ----
+  # ---- 2. Use the external sample_sizes object ----
+  # We filter the master sample_sizes for the questions we are plotting
+  # If it's an 'ab' combined question, we sum the n's.
   if (combine_ab) {
-
-    sample_sizes_ab <- meta_sel %>%
-      distinct(combined, question_group, question_code) %>%
-      group_by(combined, question_group) %>%
-      summarise(
-        n = sum(rowSums(!is.na(data[question_code])) > 0),
-        .groups = "drop"
-      )
-
-    sample_sizes <- sample_sizes_ab %>%
+    plot_sample_sizes <- sample_sizes %>%
+      inner_join(question_map, by = "question_group") %>%
       group_by(combined) %>%
       summarise(sample_size = sum(n), .groups = "drop")
-
   } else {
-
-    sample_sizes <- meta_sel %>%
-      distinct(combined, question_code) %>%
-      group_by(combined) %>%
-      summarise(
-        sample_size = sum(!is.na(data[[first(question_code)]])),
-        .groups = "drop"
-      )
+    plot_sample_sizes <- sample_sizes %>%
+      filter(question_group %in% combined_questions) %>%
+      rename(combined = question_group, sample_size = n) %>%
+      select(combined, sample_size)
   }
-
+  
   # ---- 3. Count selections ----
   long_data <- data %>%
     pivot_longer(
@@ -377,7 +364,7 @@ plot_combined_questions <- function(
 
   # ---- 4. Percentages & factors ----
   plot_data <- counts %>%
-    left_join(sample_sizes, by = "combined") %>%
+    left_join(plot_sample_sizes, by = "combined") %>% # Joining our pre-calculated sizes
     mutate(
       pct = 100 * freq / sample_size,
       label = sprintf("%.1f%% (%d)", pct, freq),
