@@ -45,18 +45,19 @@ sample_sizes <- meta %>%
   summarise(
     sample_col = {
       counts <- sapply(question_code, function(col) {
-        sum(!is.na(data[[col]]))
+        sum(!is.na(data[[col]]) & data[[col]] != -99 & data[[col]] != 999)
       })
       question_code[which(counts > 0)[1]]
     },
     n = {
       counts <- sapply(question_code, function(col) {
-        sum(!is.na(data[[col]]))
+        sum(!is.na(data[[col]]) & data[[col]] != -99 & data[[col]] != 999)
       })
       counts[which(counts > 0)[1]]
     },
     .groups = "drop"
   )
+
 ```
 
 ## Descriptives table
@@ -175,7 +176,8 @@ create_question_table <- function(data, metadata, sample_sizes) {
         sample_size == 0, 0, round(N / sample_size * 100, 1))
     ) %>%
     mutate(
-      N_percentage = paste0(N, " (", Percentage, "%)")
+      N_percentage = paste0(N, " (", Percentage, "%)"),
+      Variable = paste0(variable_name, " (", Question, ")")
     ) %>%
     # drop column question_order from dataframe
     select(!question_order)
@@ -549,4 +551,27 @@ ggarrange(p16, p18, nrow = 1, ncol = 2)
 
 ```
 
-## 
+## Combined Plot Reporting
+
+```{r}
+
+df_plot <- data %>%
+  select(Q5, Q6, Q8, Q9, Q11, Q12) %>%
+  mutate(conditions = ifelse(is.na(Q6) & Q5 == 2, 0, Q6),
+         methods = ifelse(is.na(Q9) & Q8 == 2, 0, Q9),
+         perfmeas = ifelse(is.na(Q12) & Q11 == 2, 0, Q12)) %>%
+  mutate(conditions = ifelse(conditions == -99, NA_real_, conditions),
+         methods = ifelse(methods == -99, NA_real_, methods),
+         perfmeas = ifelse(perfmeas == -99, NA_real_, perfmeas))
+
+
+pconditions <- plot_combined_questions(df_plot,
+                               meta,
+                               combined_questions = c("conditions", "methods", "perfmeas"),
+                               combine_ab = FALSE,
+                               title_plot = "Is at least one result reported for every condition/method/performance measure that was part of the simulations?",
+                               y_max = 100,
+                               wrap_width = 150)
+
+
+```
