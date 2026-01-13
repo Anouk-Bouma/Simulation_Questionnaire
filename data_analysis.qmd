@@ -302,9 +302,9 @@ For every question, there have to be the following plots:
 
 ```{r}
 plot_combined_questions <- function(
-  data = data,
-  metadata = meta,
-  sample_sizes = sample_sizes,
+  data,
+  metadata,
+  sample_sizes,
   combined_questions,
   legend_labels = c("Conditions", "Methods", "Performance Measures"),
   title_plot = combined_questions,
@@ -326,6 +326,7 @@ plot_combined_questions <- function(
       inner_join(question_map, by = "question_group") %>%
       arrange(combined, order)
   } else {
+    
     meta_sel <- metadata %>%
       filter(question_group %in% combined_questions) %>%
       mutate(combined = question_group) %>%
@@ -374,7 +375,7 @@ plot_combined_questions <- function(
 
   # ---- 4. Percentages & factors ----
   plot_data <- counts %>%
-    left_join(plot_sample_sizes, by = "combined") %>% # Joining our pre-calculated sizes
+    left_join(plot_sample_sizes, by = "combined") %>% # Joining pre-calculated sizes
     mutate(
       pct = 100 * freq / sample_size,
       label = sprintf("%.1f%% (%d)", pct, freq),
@@ -449,6 +450,7 @@ plot_combined_questions <- function(
 
 p5_8_11 <- plot_combined_questions(data,
                                meta,
+                               sample_sizes = sample_sizes,
                                combined_questions = c("Q5", "Q8", "Q11"),
                                combine_ab = FALSE,
                                title_plot = "Is at least one result reported for every condition/method/performance measure that was part of the simulations?",
@@ -543,8 +545,8 @@ p25 <- plot_combined_questions(data,
                         y_max = 100,
                         wrap_width = 80)
 
-ggarrange(p20, p24, p22, p25, nrow = 2, ncol = 2)
-ggarrange(p16, p18, nrow = 1, ncol = 2)
+ggarrange(p20, p24, p22, p25, nrow = 4, ncol = 1)
+ggarrange(p16, p18, nrow = 2, ncol = 1)
 
 ```
 
