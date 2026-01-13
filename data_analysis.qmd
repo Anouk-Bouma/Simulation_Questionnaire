@@ -431,9 +431,9 @@ plot_combined_questions <- function(
     ) +
     theme_bw() +
     theme(
-      plot.title = element_text(hjust = 0.5, size = 10, face = "bold"),
+      plot.title = element_text(hjust = 0.5, size = 12, face = "bold"),
       axis.title.x = element_text(size = 8),
-      axis.text.y = element_text(hjust = 1, size = 8, face = "bold"),
+      axis.text.y = element_text(hjust = 1, size = 9),
       legend.position = if (show_legend) "right" else "none"
     )
 }
@@ -444,61 +444,34 @@ plot_combined_questions <- function(
 
 ```{r}
 
-# Section 2: Reporting
-
-# Plot for question 5, 8 and 11
-
-p5_8_11 <- plot_combined_questions(data,
-                               meta,
-                               sample_sizes = sample_sizes,
-                               combined_questions = c("Q5", "Q8", "Q11"),
-                               combine_ab = FALSE,
-                               title_plot = "Is at least one result reported for every condition/method/performance measure that was part of the simulations?",
-                               y_max = 100,
-                               wrap_width = 80)
-
-# Plot for question 6, 9, and 12
-
-p6_9_12 <- plot_combined_questions(data,
-                               meta,
-                               combined_questions = c("Q6", "Q9", "Q12"),
-                               combine_ab = FALSE,
-                               title_plot = "Does the body of the paper report at least one result for every [Legend]",
-                               y_max = 100,
-                               wrap_width = 80)
-
-
 # Plot for question 7, 10, and 13
 
 p7_10_13 <- plot_combined_questions(data,
                                meta,
                                combined_questions = c("Q7", "Q10", "Q13"),
+                               sample_sizes = sample_sizes,
                                combine_ab = TRUE,
                                title_plot = "Results weren't reported for all [Legend] because...",
                                y_max = 100,
                                wrap_width = 80)
 
 
-# split_combined <- ggarrange(p5_8_11, p6_9_12, nrow = 2)
-# ggarrange(split_combined, p7_10_13, nrow = 1)
-
-
-
-
 # Topic 2.4: Missing values/nonconvergence
 p16 <- plot_combined_questions(data,
                                meta,
                                combined_questions = "Q16",
+                               sample_sizes = sample_sizes,
                                combine_ab = TRUE,
                                colors = "#D55E00",
                                title_plot = "The number of missing values/nonconvergent iterations wasn't reported because...",
                                y_max = 75,
-                               wrap_width = 80)
+                               wrap_width = 60)
 
 # Topic 2.5: MCSE
 p18 <- plot_combined_questions(data, 
                         meta, 
-                        combined_questions = "Q18", 
+                        combined_questions = "Q18",
+                        sample_sizes = sample_sizes,
                         combine_ab = TRUE, 
                         colors = "#D55E00",
                         title_plot = "MCSE's weren't reported (for all results) because...",
@@ -508,27 +481,30 @@ p18 <- plot_combined_questions(data,
 # Topic 2.6: Guidelines
 p20 <- plot_combined_questions(data, 
                         meta, 
-                        combined_questions = "Q20", 
+                        combined_questions = "Q20",
+                        sample_sizes = sample_sizes,
                         combine_ab = FALSE, 
                         colors = "#D55E00",
                         title_plot = "Why was no research guideline used?",
-                        y_max = 75,
+                        y_max = 100,
                         wrap_width = 80)
 
 # Topic 2.7: Preregistration
 p22 <- plot_combined_questions(data, 
                         meta, 
-                        combined_questions = "Q22", 
+                        combined_questions = "Q22",
+                        sample_sizes = sample_sizes,
                         combine_ab = FALSE, 
                         colors = "#D55E00",
                         title_plot = "Why wasn't the simulation study preregistered?",
-                        y_max = 75,
+                        y_max = 100,
                         wrap_width = 80) 
 
 # Topic 2.8: Open code
 p24 <- plot_combined_questions(data, 
                         meta, 
-                        combined_questions = "Q24", 
+                        combined_questions = "Q24",
+                        sample_sizes = sample_sizes,
                         combine_ab = FALSE, 
                         colors = "#D55E00",
                         title_plot = "Why is not all code openly available?",
@@ -538,12 +514,20 @@ p24 <- plot_combined_questions(data,
 # Topic 2.9: Open code
 p25 <- plot_combined_questions(data, 
                         meta, 
-                        combined_questions = "Q25", 
+                        combined_questions = "Q25",
+                        sample_sizes = sample_sizes,
                         combine_ab = FALSE, 
                         colors = "#D55E00",
                         title_plot = "Which measures were taken for computational reproducibility?",
                         y_max = 100,
-                        wrap_width = 80)
+                        wrap_width = 40)
+
+p20 <- p20 + theme(plot.margin = margin(10, 10, 10, 30))
+p24 <- p24 + theme(plot.margin = margin(10, 10, 10, 30))
+p22 <- p22 + theme(plot.margin = margin(10, 10, 10, 30))
+p25 <- p25 + theme(plot.margin = margin(10, 10, 10, 30))
+p16 <- p16 + theme(plot.margin = margin(10, 10, 10, 30))
+p18 <- p18 + theme(plot.margin = margin(10, 10, 10, 30))
 
 ggarrange(p20, p24, p22, p25, nrow = 4, ncol = 1)
 ggarrange(p16, p18, nrow = 2, ncol = 1)
@@ -563,14 +547,40 @@ df_plot <- data %>%
          methods = ifelse(methods == -99, NA_real_, methods),
          perfmeas = ifelse(perfmeas == -99, NA_real_, perfmeas))
 
+# Metadata for combined plot
+meta_combined <- read.xlsx("question_labels.xlsx", sheet = "codebook_combined")
+
+# Sample sizes for combined plot
+sample_sizes_combined <- meta_combined %>%
+  distinct(question_group, question_code) %>%
+  arrange(question_group) %>%
+  group_by(question_group) %>%
+  summarise(
+    sample_col = {
+      counts <- sapply(question_code, function(col) {
+        sum(!is.na(df_plot[[col]]) & df_plot[[col]] != -99 & df_plot[[col]] != 999)
+      })
+      question_code[which(counts > 0)[1]]
+    },
+    n = {
+      counts <- sapply(question_code, function(col) {
+        sum(!is.na(df_plot[[col]]) & df_plot[[col]] != -99 & df_plot[[col]] != 999)
+      })
+      counts[which(counts > 0)[1]]
+    },
+    .groups = "drop"
+  )
+
+
 
 pconditions <- plot_combined_questions(df_plot,
-                               meta,
+                               meta_combined,
+                               sample_sizes = sample_sizes_combined,
                                combined_questions = c("conditions", "methods", "perfmeas"),
                                combine_ab = FALSE,
                                title_plot = "Is at least one result reported for every condition/method/performance measure that was part of the simulations?",
                                y_max = 100,
-                               wrap_width = 150)
+                               wrap_width = 80)
 
 
 ```
