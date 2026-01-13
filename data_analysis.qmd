@@ -538,8 +538,8 @@ ggarrange(p16, p18, nrow = 2, ncol = 1)
 
 ```{r}
 
-df_plot <- data %>%
-  select(Q5, Q6, Q8, Q9, Q11, Q12) %>%
+# NOTE: check if this is the right place to add these variables to the data
+data <- data %>%
   mutate(conditions = ifelse(is.na(Q6) & Q5 == 2, 0, Q6),
          methods = ifelse(is.na(Q9) & Q8 == 2, 0, Q9),
          perfmeas = ifelse(is.na(Q12) & Q11 == 2, 0, Q12)) %>%
@@ -547,35 +547,10 @@ df_plot <- data %>%
          methods = ifelse(methods == -99, NA_real_, methods),
          perfmeas = ifelse(perfmeas == -99, NA_real_, perfmeas))
 
-# Metadata for combined plot
-meta_combined <- read.xlsx("question_labels.xlsx", sheet = "codebook_combined")
 
-# Sample sizes for combined plot
-sample_sizes_combined <- meta_combined %>%
-  distinct(question_group, question_code) %>%
-  arrange(question_group) %>%
-  group_by(question_group) %>%
-  summarise(
-    sample_col = {
-      counts <- sapply(question_code, function(col) {
-        sum(!is.na(df_plot[[col]]) & df_plot[[col]] != -99 & df_plot[[col]] != 999)
-      })
-      question_code[which(counts > 0)[1]]
-    },
-    n = {
-      counts <- sapply(question_code, function(col) {
-        sum(!is.na(df_plot[[col]]) & df_plot[[col]] != -99 & df_plot[[col]] != 999)
-      })
-      counts[which(counts > 0)[1]]
-    },
-    .groups = "drop"
-  )
-
-
-
-pconditions <- plot_combined_questions(df_plot,
-                               meta_combined,
-                               sample_sizes = sample_sizes_combined,
+pconditions <- plot_combined_questions(data = data,
+                               meta,
+                               sample_sizes = sample_sizes,
                                combined_questions = c("conditions", "methods", "perfmeas"),
                                combine_ab = FALSE,
                                title_plot = "Is at least one result reported for every condition/method/performance measure that was part of the simulations?",
@@ -620,21 +595,38 @@ plot_combined_questions_grouped <- function(
   }
 
   # ---- 2. Calculate Sample Sizes per Group ----
-  relevant_codes <- unique(meta_sel$question_code)
-  
-  sample_sizes <- data %>%
-    select(all_of(c(split_var, relevant_codes))) %>%
-    mutate(row_id = row_number()) %>%
-    mutate(across(all_of(split_var), as.factor)) %>%
-    pivot_longer(cols = all_of(relevant_codes), names_to = "question_code", values_to = "val") %>%
-    inner_join(meta_sel %>% distinct(question_code, combined), by = "question_code") %>%
-    filter(!is.na(val)) %>%
-    group_by(across(all_of(c(split_var, "combined")))) %>%
-    summarise(sample_size = n_distinct(row_id), .groups = "drop")
+  plot_sample_sizes <- meta_sel %>%
+    distinct(combined, question_group, question_code) %>%
+    group_by(combined, question_group) %>%
+    group_modify(~ {
+      current_code <- .x$question_code[1]
+      data %>%
+        # Ensure split_var is a factor here
+        mutate(across(all_of(split_var), as.factor)) %>% 
+        group_by(across(all_of(split_var))) %>%
+        summarise(
+          sample_size = sum(!is.na(.data[[current_code]]) & 
+                            .data[[current_code]] != -99 & 
+                            .data[[current_code]] != 999),
+          .groups = "drop"
+        )
+    }) %>%
+    ungroup()
+
+  if (combine_ab) {
+    plot_sample_sizes <- plot_sample_sizes %>%
+      group_by(across(all_of(c(split_var, "combined")))) %>%
+      summarise(sample_size = sum(sample_size), .groups = "drop")
+  } else {
+    plot_sample_sizes <- plot_sample_sizes %>%
+      select(all_of(c(split_var, "combined", "sample_size")))
+  }
 
   # ---- 3. Count Selections ----
+  relevant_codes <- unique(meta_sel$question_code)
   long_data <- data %>%
     select(all_of(c(split_var, relevant_codes))) %>%
+    # Ensure split_var is a factor here as well
     mutate(across(all_of(split_var), as.factor)) %>%
     pivot_longer(
       cols = all_of(relevant_codes),
@@ -653,17 +645,15 @@ plot_combined_questions_grouped <- function(
     group_by(across(all_of(c(split_var, "combined", "short_label", "order")))) %>%
     summarise(freq = n(), .groups = "drop")
 
-  # ---- 4. Percentages & Factors (WITH ZERO COMPLETION) ----
+  # ---- 4. Percentages & Factors ----
   plot_data <- counts %>%
-    # Ensure every label exists for every group, filling missing freq with 0
     complete(
       nesting(combined, short_label, order), 
       !!sym(split_var), 
       fill = list(freq = 0)
     ) %>%
-    left_join(sample_sizes, by = c(split_var, "combined")) %>%
+    left_join(plot_sample_sizes, by = c(split_var, "combined")) %>%
     mutate(
-      # If sample_size is NA (group exists but no one saw quest), default to freq
       pct = ifelse(is.na(sample_size) | sample_size == 0, 0, 100 * freq / sample_size),
       label = sprintf("%.1f%% (%d)", pct, freq),
       short_label = factor(
@@ -672,42 +662,19 @@ plot_combined_questions_grouped <- function(
       )
     )
 
-  # ---- 5. Plot (Side-by-Side) ----
-  p <- ggplot(plot_data, aes(x = fct_rev(short_label), y = pct, fill = .data[[split_var]])) +
-    geom_col(
-      position = position_dodge(width = 0.8), 
-      width = 0.8, 
-      alpha = 0.8, 
-      color = "black", 
-      linewidth = 0.3
-    ) +
-    geom_text(
-      aes(label = label), 
-      position = position_dodge(width = 0.8), 
-      hjust = -0.1, 
-      size = 3
-    ) +
+  # ---- 5. Plot ----
+  ggplot(plot_data, aes(x = fct_rev(short_label), y = pct, fill = .data[[split_var]])) +
+    geom_col(position = position_dodge(width = 0.8), width = 0.8, alpha = 0.8, color = "black", linewidth = 0.3) +
+    geom_text(aes(label = label), position = position_dodge(width = 0.8), hjust = -0.1, size = 3) +
     coord_flip() +
     scale_y_continuous(limits = c(0, y_max), expand = expansion(mult = c(0, 0.2))) +
-    scale_fill_manual(
-      values = colors,
-      labels = legend_labels,
-      name = ""
-    ) +
+    scale_fill_manual(values = colors, labels = legend_labels, name = "") +
     scale_x_discrete(labels = ~ stringr::str_wrap(.x, wrap_width)) +
-    labs(
-      x = NULL, 
-      y = "Percentage", 
-      title = if (!is.null(title_plot)) stringr::str_wrap(title_plot, wrap_width)
-    ) +
+    labs(x = NULL, y = "Percentage", title = if (!is.null(title_plot)) stringr::str_wrap(title_plot, wrap_width)) +
     theme_bw() +
-    theme(
-      plot.title = element_text(hjust = 0.5, size = 10, face = "bold"),
-      axis.text.y = element_text(face = "bold"),
-      legend.position = "bottom"
-    )
-
-  return(p)
+    theme(plot.title = element_text(hjust = 0.5, size = 10, face = "bold"),
+          axis.text.y = element_text(face = "bold"),
+          legend.position = "bottom")
 }
 ```
 
@@ -720,6 +687,14 @@ plot_combined_questions_grouped(
     metadata = meta,
     combine_ab = FALSE,
     combined_questions = c("Q12"),
+    split_var = "new_method"
+)
+
+plot_combined_questions_grouped(
+    data = data,
+    metadata = meta,
+    combine_ab = TRUE,
+    combined_questions = c("Q10"),
     split_var = "new_method"
 )
 ```
