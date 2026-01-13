@@ -21,6 +21,7 @@ library(openxlsx)
 library(forcats)
 library(egg)
 library(ggpubr)
+library(reshape2)
 ```
 
 ## Loading the data
@@ -246,32 +247,41 @@ vars_for_correlations[vars_for_correlations == 999] <- NA
 # Compute pairwise correlations using pairwise complete observations
 cor_matrix <- cor(vars_for_correlations, use = "pairwise.complete.obs")
 
-cor_matrix
-
 #write.xlsx(cor_matrix, "cor_matrix.xlsx")
 
 
- # ----------- NOTE: not done yet here: --------- #
+#################--- Correlation t-tests with finite sample correction ---########################
 
-# Calculating the t-statistic with the finite population correction factor
-r <- 0.3341475
-rho <- 0
-n <- 196
-N <- 949 # Number of included articles (= population size)
+# Create a matrix of non-missing counts for each pair
+n_matrix <- crossprod(!is.na(vars_for_correlations))
 
-t_corrected <- function(r, rho, n, N) {
-  t <- (r - rho)/(sqrt((1-r^2)/(n - 2))*sqrt((N-n)/(N-1)))
-  return(t)
-}
+# Calculate t-values for the whole matrix
+# This applies your FPC formula to every cell
+t_matrix <- (cor_matrix - rho) / (sqrt((1 - cor_matrix^2) / (n_matrix - 2)) * sqrt((N - n_matrix) / (N - 1)))
 
-# two-sided t-test
-p_value <- function(t_value, df) { 2 * (1 - pt(abs(t_value), df)) }
+# Calculate p-values
+# df is also a matrix here (n - 2)
+p_matrix <- 2 * (1 - pt(abs(t_matrix), df = n_matrix - 2))
 
+# Clean up diagonals
+diag(p_matrix) <- NA
+diag(t_matrix) <- NA
 
-# Run the t-test
-t_value <- t_corrected(r, rho, n, N)
-p <- p_value(t_value, df = n - 2)
+# Combine into a single data frame
+results <- data.frame(
+  Pair = melt(cor_matrix)$Var1,
+  Var2 = melt(cor_matrix)$Var2,
+  Correlation = melt(cor_matrix)$value,
+  t_stat = melt(t_matrix)$value,
+  p_val = melt(p_matrix)$value,
+  n = melt(n_matrix)$value
+)
 
+results <- results %>%
+  mutate(df = n - 2)
+
+# Filter out duplicates (the lower triangle of the matrix)
+results <- results[as.numeric(results$Pair) < as.numeric(results$Var2), ]
 ```
 
 ## Plotting
