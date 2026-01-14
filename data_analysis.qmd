@@ -22,6 +22,7 @@ library(forcats)
 library(egg)
 library(ggpubr)
 library(reshape2)
+library(lsr)
 ```
 
 ## Loading the data
@@ -584,6 +585,170 @@ plot_combined_questions_grouped <- function(
       combined = rep(combined_questions, each = 2),
       question_group = paste0(rep(combined_questions, each = 2), c("a", "b"))
     )
+    
+    meta_sel <- metadata %>%
+      inner_join(question_map, by = "question_group") %>%
+      arrange(combined, order)
+    
+  } else {
+    
+    meta_sel <- metadata %>%
+      filter(question_group %in% combined_questions) %>%
+      mutate(combined = question_group) %>%
+      arrange(combined, order)
+  }
+
+  # ---- 2. Calculate Sample Sizes per Group ----
+  plot_sample_sizes <- meta_sel %>%
+    distinct(combined, question_group, question_code) %>%
+    group_by(combined, question_group) %>%
+    group_modify(~ {
+      current_code <- .x$question_code[1]
+      data %>%
+        # Ensure split_var is a factor here
+        mutate(across(all_of(split_var), as.factor)) %>% 
+        group_by(across(all_of(split_var))) %>%
+        summarise(
+          sample_size = sum(!is.na(.data[[current_code]]) & 
+                            .data[[current_code]] != -99 & 
+                            .data[[current_code]] != 999),
+          .groups = "drop"
+        )
+    }) %>%
+    ungroup()
+
+  if (combine_ab) {
+    plot_sample_sizes <- plot_sample_sizes %>%
+      group_by(across(all_of(c(split_var, "combined")))) %>%
+      summarise(sample_size = sum(sample_size), .groups = "drop")
+  } else {
+    plot_sample_sizes <- plot_sample_sizes %>%
+      select(all_of(c(split_var, "combined", "sample_size")))
+  }
+
+  # ---- 3. Count Selections ----
+  relevant_codes <- unique(meta_sel$question_code)
+  long_data <- data %>%
+    select(all_of(c(split_var, relevant_codes))) %>%
+    # Ensure split_var is a factor here as well
+    mutate(across(all_of(split_var), as.factor)) %>%
+    pivot_longer(
+      cols = all_of(relevant_codes),
+      names_to = "question_code",
+      values_to = "value"
+    )
+
+  if (combine_ab) {
+    long_data <- long_data %>% filter(value == 1)
+  } else {
+    long_data <- long_data %>% filter(!is.na(value))
+  }
+
+  counts <- long_data %>%
+    inner_join(meta_sel, by = c("question_code", "value")) %>%
+    group_by(across(all_of(c(split_var, "combined", "short_label", "order")))) %>%
+    summarise(freq = n(), .groups = "drop")
+
+  # ---- 4. Percentages & Factors ----
+  plot_data <- counts %>%
+    complete(
+      nesting(combined, short_label, order), 
+      !!sym(split_var), 
+      fill = list(freq = 0)
+    ) %>%
+    left_join(plot_sample_sizes, by = c(split_var, "combined")) %>%
+    mutate(
+      pct = ifelse(is.na(sample_size) | sample_size == 0, 0, 100 * freq / sample_size),
+      label = sprintf("%.1f%% (%d)", pct, freq),
+      short_label = factor(
+        short_label, 
+        levels = meta_sel %>% arrange(order) %>% distinct(short_label) %>% pull(short_label)
+      )
+    )
+
+  # ---- 5. Plot ----
+  # NOTE: clear this mess up:
+  ggplot(plot_data, aes(x = fct_rev(short_label), y = pct, fill = .data[[split_var]])) +
+    geom_col(position = position_dodge(width = 0.8), width = 0.8, alpha = 0.8, color = "black", linewidth = 0.3) +
+    geom_text(aes(label = label), position = position_dodge(width = 0.8), hjust = -0.1, size = 3) +
+    coord_flip() +
+    scale_y_continuous(limits = c(0, y_max), expand = expansion(mult = c(0, 0.2))) +
+    scale_fill_manual(values = colors, labels = legend_labels, name = "") +
+    scale_x_discrete(labels = ~ stringr::str_wrap(.x, wrap_width)) +
+    labs(x = NULL, y = "Percentage", title = if (!is.null(title_plot)) stringr::str_wrap(title_plot, wrap_width)) +
+    theme_bw() +
+    theme(plot.title = element_text(hjust = 0.5, size = 10, face = "bold"),
+          axis.text.y = element_text(face = "bold"),
+          legend.position = "bottom")
+}
+```
+
+## Plot a question
+
+-   Check if Q14 and Q15 should also become a combined plot, then add new variable just as with conditions/methods/performance measures
+
+```{r}
+
+vars_to_plot_ab <- c("Q7", "Q10", "Q13", "Q16", "Q18")
+
+vars_to_plot_regular <- c("conditions", "methods", "perfmeas", "Q14", "Q15", "Q17", "Q19", "Q20", "Q21", "Q22", "Q23", "Q24", "Q25")
+
+plot_list <- list()
+
+for (i in 1:length(vars_to_plot_ab)) {
+  plot_list[[i]] <- plot_combined_questions_grouped(
+    data = data,
+    metadata = meta,
+    combine_ab = TRUE,
+    combined_questions = vars_to_plot_ab[i],
+    split_var = "new_method"
+)
+}
+
+for (i in 1:length(vars_to_plot_regular)) {
+  plot_list[[i]] <- plot_combined_questions_grouped(
+    data = data,
+    metadata = meta,
+    combine_ab = FALSE,
+    combined_questions = vars_to_plot_regular[i],
+    split_var = "new_method"
+)
+}
+
+
+ggarrange(plotlist = plot_list, ncol = 2)
+
+plot_combined_questions_grouped(
+    data = data,
+    metadata = meta,
+    combine_ab = FALSE,
+    combined_questions = c("Q12"),
+    split_var = "new_method"
+)
+
+plot_combined_questions_grouped(
+    data = data,
+    metadata = meta,
+    combine_ab = FALSE,
+    combined_questions = c("methods"),
+    split_var = "new_method"
+)
+```
+
+## Streamlined workflow Chi\^2 and Cramer's V with plots
+
+1.  Get dataframe as input for both the plots and the calculations
+
+```{r}
+
+get_plot_data <- function(data, metadata, combined_questions, split_var, combine_ab = FALSE) {
+  
+  # ---- 1. Select & Map Metadata ----
+  if (combine_ab) {
+    question_map <- tibble(
+      combined = rep(combined_questions, each = 2),
+      question_group = paste0(rep(combined_questions, each = 2), c("a", "b"))
+    )
     meta_sel <- metadata %>%
       inner_join(question_map, by = "question_group") %>%
       arrange(combined, order)
@@ -661,40 +826,85 @@ plot_combined_questions_grouped <- function(
         levels = meta_sel %>% arrange(order) %>% distinct(short_label) %>% pull(short_label)
       )
     )
-
-  # ---- 5. Plot ----
-  ggplot(plot_data, aes(x = fct_rev(short_label), y = pct, fill = .data[[split_var]])) +
-    geom_col(position = position_dodge(width = 0.8), width = 0.8, alpha = 0.8, color = "black", linewidth = 0.3) +
-    geom_text(aes(label = label), position = position_dodge(width = 0.8), hjust = -0.1, size = 3) +
-    coord_flip() +
-    scale_y_continuous(limits = c(0, y_max), expand = expansion(mult = c(0, 0.2))) +
-    scale_fill_manual(values = colors, labels = legend_labels, name = "") +
-    scale_x_discrete(labels = ~ stringr::str_wrap(.x, wrap_width)) +
-    labs(x = NULL, y = "Percentage", title = if (!is.null(title_plot)) stringr::str_wrap(title_plot, wrap_width)) +
-    theme_bw() +
-    theme(plot.title = element_text(hjust = 0.5, size = 10, face = "bold"),
-          axis.text.y = element_text(face = "bold"),
-          legend.position = "bottom")
+  
+  return(plot_data)
 }
+
+
 ```
 
-## Plot a question
+2.  Take the processed plot_data and run the tests
 
 ```{r}
 
-plot_combined_questions_grouped(
-    data = data,
-    metadata = meta,
-    combine_ab = FALSE,
-    combined_questions = c("Q12"),
-    split_var = "new_method"
-)
+# Run the get plot data function to generate the dataframe
+plot_data <- get_plot_data(data = data, metadata = meta, combined_questions = vars_to_plot_regular, split_var = "new_method", combine_ab = FALSE)
 
-plot_combined_questions_grouped(
-    data = data,
-    metadata = meta,
-    combine_ab = TRUE,
-    combined_questions = c("Q10"),
-    split_var = "new_method"
-)
+calculate_stats <- function(plot_df, split_var) {
+  # Create a wide contingency table: Rows = Answer labels, Cols = Group (0/1)
+  test_table <- plot_df %>%
+    mutate(id_col = paste0(combined, " ", short_label)) %>%
+    select(id_col, all_of(split_var), freq) %>%
+    pivot_wider(
+      names_from = all_of(split_var), 
+      values_from = freq) %>%
+    column_to_rownames("id_col") %>%
+    as.matrix()
+  
+  # Remove rows/cols with only zeros to avoid errors
+  #test_table <- test_table[rowSums(test_table) > 0, colSums(test_table) > 0]
+  
+  # Run tests
+  chi_res <- chisq.test(test_table)
+  cv_res  <- lsr::cramersV(test_table)
+  
+  return(list(
+    chi_sq = chi_res$statistic,
+    p_value = chi_res$p.value,
+    cramers_v = cv_res,
+    df = chi_res$parameter
+  ))
+}
+
+
+stats_data <- calculate_stats(plot_df = plot_data, split_var = "new_method")
+```
+
+```{r}
+
+
+# We wrap your current logic into a 'Master' processing list
+results_list <- map(vars_to_plot_regular, function(q_name) {
+  
+  # A. Use your existing logic to get the data (modify your function to return the data if needed)
+  # For now, let's assume we extract the 'plot_data' part
+  p_data <- get_plot_data(data, meta, q_name, "new_method", combine_ab = FALSE)
+  
+  # B. Run the stats
+  stats_output <- calculate_stats(p_data, "new_method")
+  
+  # C. Generate the plot (your existing function)
+  p_plot <- plot_combined_questions_grouped(data, meta, q_name, split_var = "new_method", combine_ab = FALSE)
+  
+  # D. Store everything in a clean list
+  list(
+    question = q_name,
+    stats = stats_output,
+    plot = p_plot,
+    raw_data = p_data
+  )
+})
+
+
+# Create a summary table for your next calculations
+summary_table <- map_df(results_list, function(item) {
+  tibble(
+    question = item$question,
+    p_value = item$stats$p_value,
+    cramers_v = item$stats$cramers_v,
+    significant = item$stats$p_value < 0.05
+  )
+})
+
+print(summary_table)
 ```
