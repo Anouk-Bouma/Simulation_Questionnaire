@@ -196,7 +196,7 @@ descriptives_table <- create_question_table(data, meta, sample_sizes)
 
 ```{r}
 
-write.xlsx(descriptives_table, file = "test_table_desc.xlsx")
+#write.xlsx(descriptives_table, file = "test_table_desc.xlsx")
 ```
 
 ## Descriptives continues variables
@@ -558,6 +558,20 @@ pconditions <- plot_combined_questions(data = data,
                                y_max = 100,
                                wrap_width = 80)
 
+
+## How many participants engaged in not reporting a result for any of the elements?
+data_not_reported <- data %>%
+  filter(conditions == 0 | methods == 0 | perfmeas == 0)
+
+any_not_reported <- nrow(data_not_reported)/221
+
+## How many participants engaged in split reporting a results for any of the elements?
+data_split_reported <- data %>%
+  filter(conditions == 2 | methods == 2 | perfmeas == 2)
+
+any_split_reported <- nrow(data_split_reported)/221
+
+total_any_selective_reported <- (nrow(data_not_reported) + nrow(data_split_reported))/221
 
 ```
 
