@@ -573,6 +573,38 @@ any_split_reported <- nrow(data_split_reported)/221
 
 total_any_selective_reported <- (nrow(data_not_reported) + nrow(data_split_reported))/221
 
+
+# NOTE: check if we keep this or not
+## How many participants engaged in either focusing on significant results (6), conclusion alignment (8), or a specific method (10)
+# conditions = 19.0%
+qrp_condition <- data %>%
+  filter(Q7a_6 == 1 |
+         Q7b_6 == 1 |
+           Q7a_8 == 1 |
+           Q7b_8 == 1 |
+           Q7a_10 == 1 |
+           Q7b_10 == 1 )
+
+# methods = 22.6%
+qrp_method <- data %>%
+  filter(Q10a_6 == 1 |
+         Q10b_6 == 1 |
+           Q10a_8 == 1 |
+           Q10b_8 == 1 |
+           Q10a_10 == 1 |
+           Q10b_10 == 1 )
+
+
+# performance measures = 27.2%
+qrp_pm <- data %>%
+  filter(Q13a_6 == 1 |
+         Q13b_6 == 1 |
+           Q13a_8 == 1 |
+           Q13b_8 == 1 |
+           Q13a_10 == 1 |
+           Q13b_10 == 1 )
+
+
 ```
 
 ## Plots split by variable
@@ -852,7 +884,7 @@ get_plot_data <- function(data, metadata, combined_questions, split_var, combine
 ```{r}
 
 # Run the get plot data function to generate the dataframe
-plot_data <- get_plot_data(data = data, metadata = meta, combined_questions = vars_to_plot_regular, split_var = "new_method", combine_ab = FALSE)
+plot_data <- get_plot_data(data = data, metadata = meta, combined_questions = vars_to_plot_ab, split_var = "new_method", combine_ab = TRUE)
 
 calculate_stats <- function(plot_df, split_var) {
   # Create a wide contingency table: Rows = Answer labels, Cols = Group (0/1)
@@ -864,9 +896,6 @@ calculate_stats <- function(plot_df, split_var) {
       values_from = freq) %>%
     column_to_rownames("id_col") %>%
     as.matrix()
-  
-  # Remove rows/cols with only zeros to avoid errors
-  #test_table <- test_table[rowSums(test_table) > 0, colSums(test_table) > 0]
   
   # Run tests
   chi_res <- chisq.test(test_table)
@@ -886,39 +915,60 @@ stats_data <- calculate_stats(plot_df = plot_data, split_var = "new_method")
 
 ```{r}
 
+calculate_stats_by_question <- function(plot_df, split_var) {
+  
+  # 1. Identify the different questions (e.g., Q10 and Q13)
+  questions <- unique(plot_df$combined)
+  
+  results_list <- list()
+  
+  for (q in questions) {
+    # Filter data for just this question
+    q_data <- plot_df %>% filter(combined == q)
+    
+    # 2. Create the Contingency Table for this question specifically
+    # Rows: Answer Labels, Cols: Group (0/1)
+    test_table <- q_data %>%
+      select(short_label, all_of(split_var), freq) %>%
+      pivot_wider(names_from = all_of(split_var), values_from = freq) %>%
+      # Replace NAs with 0 if some groups didn't select an answer
+      mutate(across(everything(), ~replace_na(., 0))) %>%
+      column_to_rownames("short_label") %>%
+      as.matrix()
+    
+    # 3. Run Fisher's Exact Test (Recommended for your small N)
+    # Note: simulate.p.value = TRUE is helpful for tables larger than 2x2
+    fisher_res <- fisher.test(test_table, simulate.p.value = TRUE)
+    
+    # 4. Optional: Run Chi-Square (will likely show "Chi-squared approximation may be incorrect")
+    chi_res <- chisq.test(test_table)
+    cv_res  <- lsr::cramersV(test_table)
+    
+    # Store results for this question
+    results_list[[q]] <- list(
+      question = q,
+      table = test_table,
+      fisher_p = fisher_res$p.value,
+      chi_sq = chi_res$statistic,
+      chi_p = chi_res$p.value,
+      cramers_v = cv_res
+    )
+  }
+  
+  return(results_list)
+}
 
-# We wrap your current logic into a 'Master' processing list
-results_list <- map(vars_to_plot_regular, function(q_name) {
-  
-  # A. Use your existing logic to get the data (modify your function to return the data if needed)
-  # For now, let's assume we extract the 'plot_data' part
-  p_data <- get_plot_data(data, meta, q_name, "new_method", combine_ab = FALSE)
-  
-  # B. Run the stats
-  stats_output <- calculate_stats(p_data, "new_method")
-  
-  # C. Generate the plot (your existing function)
-  p_plot <- plot_combined_questions_grouped(data, meta, q_name, split_var = "new_method", combine_ab = FALSE)
-  
-  # D. Store everything in a clean list
-  list(
-    question = q_name,
-    stats = stats_output,
-    plot = p_plot,
-    raw_data = p_data
+# To use it:
+all_results <- calculate_stats_by_question(plot_data, "new_method")
+
+summary_stats <- do.call(rbind, lapply(all_results, function(x) {
+  data.frame(
+    Question = x$question,
+    Fisher_P = round(x$fisher_p, 4),
+    Chi_Sq = round(x$chi_sq, 2),
+    Chi_P = round(x$chi_p, 4),
+    Cramers_V = round(x$cramers_v, 3),
+    Significance = ifelse(x$fisher_p < 0.05, "Yes*", "No")
   )
-})
-
-
-# Create a summary table for your next calculations
-summary_table <- map_df(results_list, function(item) {
-  tibble(
-    question = item$question,
-    p_value = item$stats$p_value,
-    cramers_v = item$stats$cramers_v,
-    significant = item$stats$p_value < 0.05
-  )
-})
-
-print(summary_table)
+}))
 ```
