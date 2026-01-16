@@ -781,7 +781,7 @@ plot_combined_questions_grouped(
 )
 ```
 
-## Streamlined workflow Chi\^2 and Cramer's V with plots
+## Calculating Fisher's Exact test, Chi\^2, and Cramer's V for split by new_method
 
 1.  Get dataframe as input for both the plots and the calculations
 
@@ -875,43 +875,22 @@ get_plot_data <- function(data, metadata, combined_questions, split_var, combine
   
   return(plot_data)
 }
- 
-
 ```
 
-2.  Take the processed plot_data and run the tests
+Apply function to generate the dataframe for new_method
 
 ```{r}
 
 # Run the get plot data function to generate the dataframe
-plot_data <- get_plot_data(data = data, metadata = meta, combined_questions = vars_to_plot_ab, split_var = "new_method", combine_ab = TRUE)
+plot_data_1 <- get_plot_data(data = data, metadata = meta, combined_questions = vars_to_plot_ab, split_var = "new_method", combine_ab = TRUE)
 
-calculate_stats <- function(plot_df, split_var) {
-  # Create a wide contingency table: Rows = Answer labels, Cols = Group (0/1)
-  test_table <- plot_df %>%
-    mutate(id_col = paste0(combined, " ", short_label)) %>%
-    select(id_col, all_of(split_var), freq) %>%
-    pivot_wider(
-      names_from = all_of(split_var), 
-      values_from = freq) %>%
-    column_to_rownames("id_col") %>%
-    as.matrix()
-  
-  # Run tests
-  chi_res <- chisq.test(test_table)
-  cv_res  <- lsr::cramersV(test_table)
-  
-  return(list(
-    chi_sq = chi_res$statistic,
-    p_value = chi_res$p.value,
-    cramers_v = cv_res,
-    df = chi_res$parameter
-  ))
-}
+plot_data_2 <- get_plot_data(data = data, metadata = meta, combined_questions = vars_to_plot_regular, split_var = "new_method", combine_ab = FALSE)
 
+plot_data <- rbind(plot_data_1, plot_data_2)
 
-stats_data <- calculate_stats(plot_df = plot_data, split_var = "new_method")
 ```
+
+2.  Take the processed plot_data and run the tests
 
 ```{r}
 
