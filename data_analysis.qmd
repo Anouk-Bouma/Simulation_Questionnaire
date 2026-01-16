@@ -23,6 +23,7 @@ library(egg)
 library(ggpubr)
 library(reshape2)
 library(lsr)
+library(gridExtra)
 ```
 
 ## Loading the data
@@ -446,7 +447,7 @@ plot_combined_questions <- function(
 ```{r}
 
 # Plot for question 7, 10, and 13
-
+# NOTE: this plot is genereted later??
 p7_10_13 <- plot_combined_questions(data,
                                meta,
                                combined_questions = c("Q7", "Q10", "Q13"),
@@ -725,15 +726,17 @@ plot_combined_questions_grouped <- function(
     theme_bw() +
     theme(plot.title = element_text(hjust = 0.5, size = 10, face = "bold"),
           axis.text.y = element_text(face = "bold"),
-          legend.position = "bottom")
+          legend.position = "bottom", plot.margin = margin(10, 10, 10, 30))
 }
 ```
 
 ## Plot a question
 
--   Check if Q14 and Q15 should also become a combined plot, then add new variable just as with conditions/methods/performance measures
+-   NOTE: Check if Q14 and Q15 should also become a combined plot, then add new variable just as with conditions/methods/performance measures
 
 ```{r}
+
+################# OLD #######################################
 
 vars_to_plot_ab <- c("Q7", "Q10", "Q13", "Q16", "Q18")
 
@@ -761,23 +764,59 @@ for (i in 1:length(vars_to_plot_regular)) {
 )
 }
 
+###############################################################
 
-ggarrange(plotlist = plot_list, ncol = 2)
+
+
+############ NEW ##########################
+# Generating a PDF with plots split by new_method
+
+vars_to_plot_regular <- c("conditions", "methods", "perfmeas", "Q14", "Q15", "Q17", "Q19", "Q20", "Q21", "Q22", "Q23", "Q24", "Q25")
+
+plot_list <- list()
+
+for (i in 1:length(vars_to_plot_regular)) {
+  
+  # Extract the title from metadata for the current question
+  # Assuming 'question_group' in metadata matches the strings in vars_to_plot_regular
+  current_title <- meta %>%
+    filter(question_group == vars_to_plot_regular[i]) %>%
+    slice(1) %>%
+    pull(item)
+  
+  # Call the function using the extracted title
+  p <- plot_combined_questions_grouped(
+    data = data,
+    metadata = meta,
+    combine_ab = FALSE,
+    combined_questions = vars_to_plot_regular[i],
+    split_var = "new_method",
+    wrap_width = 50,
+    title_plot = paste0(vars_to_plot_regular[i], ": ", current_title)  # Pass the dynamic title here
+  )
+  plot_list[[i]] <- p + theme(plot.margin = margin(1, 1, 1, 1, "cm"))
+}
+
+# Add plots to object to save
+multipage_plot <- marrangeGrob(plot_list, nrow = 2, ncol = 2) # NOTE: Check how many plots per page works well
+# Generate PDF with plots
+ggsave("Questionnaire_Results_Full.pdf", multipage_plot, width = 8.5, height = 11)
+
+
+########## Add plots with a/b versions here: ##############
+
+
+
+
+########## Plots split by aim ##################
 
 plot_combined_questions_grouped(
     data = data,
     metadata = meta,
     combine_ab = FALSE,
     combined_questions = c("Q12"),
-    split_var = "new_method"
-)
-
-plot_combined_questions_grouped(
-    data = data,
-    metadata = meta,
-    combine_ab = FALSE,
-    combined_questions = c("methods"),
-    split_var = "new_method"
+    colors = c("red", "blue", "grey", "orange"),
+    split_var = "Q2" #split by aim
 )
 ```
 
