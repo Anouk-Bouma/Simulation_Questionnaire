@@ -875,7 +875,7 @@ get_plot_data <- function(data, metadata, combined_questions, split_var, combine
   
   return(plot_data)
 }
-
+ 
 
 ```
 
