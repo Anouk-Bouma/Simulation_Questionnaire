@@ -284,6 +284,13 @@ results <- results %>%
 
 # Filter out duplicates (the lower triangle of the matrix)
 results <- results[as.numeric(results$Pair) < as.numeric(results$Var2), ]
+
+
+### Scatterplots
+# NOTE: would need to put names in the plot for clarity
+pairs(~Q27_1 + Q28_1 + Q29_1, data = data, xlim = c(0,1), ylim = c(0,1))
+
+
 ```
 
 ## Plotting
@@ -533,6 +540,9 @@ p18 <- p18 + theme(plot.margin = margin(10, 10, 10, 30))
 
 ggarrange(p20, p24, p22, p25, nrow = 4, ncol = 1)
 ggarrange(p16, p18, nrow = 2, ncol = 1)
+
+# Saving plots in high quality
+#ggsave("plot.png", plot = p20)
 
 ```
 
@@ -789,7 +799,7 @@ plot_combined_questions_grouped(
 1.  Get dataframe as input for both the plots and the calculations
 
 ```{r}
-
+# NOTE: change name of plot-data. because it is not used to plot anymore
 get_plot_data <- function(data, metadata, combined_questions, split_var, combine_ab = FALSE) {
   
   # ---- 1. Select & Map Metadata ----
