@@ -257,6 +257,10 @@ cor_matrix <- cor(vars_for_correlations, use = "pairwise.complete.obs")
 # Create a matrix of non-missing counts for each pair
 n_matrix <- crossprod(!is.na(vars_for_correlations))
 
+# Input numbers
+rho <- 0 # test against 0
+N <- 949 # number of included articles
+
 # Calculate t-values for the whole matrix
 # This applies your FPC formula to every cell
 t_matrix <- (cor_matrix - rho) / (sqrt((1 - cor_matrix^2) / (n_matrix - 2)) * sqrt((N - n_matrix) / (N - 1)))
