@@ -9,7 +9,7 @@ editor: visual
 ## Version Control
 
 ```{r}
-renv::restore()
+#renv::restore()
 
 library(tidyverse)
 library(readxl)
@@ -24,6 +24,7 @@ library(ggpubr)
 library(reshape2)
 library(lsr)
 library(gridExtra)
+library(psych)
 ```
 
 ## 1. Loading the data
@@ -87,6 +88,9 @@ data <- data %>%
 ### 2.3 Objects that are used across codeblocks
 
 ```{r}
+
+# Setting a seed. Note that this seed is only used in simulations to calculate the p-value for Fisher's Exact test. One can check that the seed was set to the date seed was commited to Github
+set.seed(220126)
 
 # Vector of all nominal variables
 all_vars <- c("conditions", "Q7", "methods", "Q10", "perfmeas", "Q13", "Q14", "Q15", "Q16", "Q17", "Q18", "Q19", "Q20", "Q21", "Q22", "Q23", "Q24", "Q25")
@@ -470,41 +474,41 @@ plot_data <- rbind(plot_data_1, plot_data_2)
 2.  Take the processed plot_data and run the tests
 
 ```{r}
-
-calculate_stats_by_question <- function(plot_df, split_var) {
+ calculate_stats_by_question <- function(plot_df, split_var) {
   
-  # 1. Identify the different questions (e.g., Q10 and Q13)
   questions <- unique(plot_df$combined)
-  
   results_list <- list()
   
+  # number of iterations
+  iterations <- 100000
+  
   for (q in questions) {
-    # Filter data for just this question
     q_data <- plot_df %>% filter(combined == q)
     
-    # 2. Create the Contingency Table for this question specifically
-    # Rows: Answer Labels, Cols: Group (0/1)
     test_table <- q_data %>%
       select(short_label, all_of(split_var), freq) %>%
       pivot_wider(names_from = all_of(split_var), values_from = freq) %>%
-      # Replace NAs with 0 if some groups didn't select an answer
       mutate(across(everything(), ~replace_na(., 0))) %>%
       column_to_rownames("short_label") %>%
       as.matrix()
     
-    # 3. Run Fisher's Exact Test (Recommended for your small N)
-    # Note: simulate.p.value = TRUE is helpful for tables larger than 2x2
-    fisher_res <- fisher.test(test_table, simulate.p.value = TRUE)
+    # Run Fisher's Exact Test
+    fisher_res <- fisher.test(test_table, simulate.p.value = TRUE, B = iterations)
     
-    # 4. Optional: Run Chi-Square (will likely show "Chi-squared approximation may be incorrect")
+    # --- MCSE CALCULATION ---
+    p_val <- fisher_res$p.value
+    # Formula as defined by Morris et al. (2019) for proportion estimates:
+    mcse_val <- sqrt((p_val * (1 - p_val)) / iterations)
+    # ------------------------
+    
     chi_res <- chisq.test(test_table)
     cv_res  <- lsr::cramersV(test_table)
     
-    # Store results for this question
     results_list[[q]] <- list(
       question = q,
       table = test_table,
-      fisher_p = fisher_res$p.value,
+      fisher_p = p_val,
+      fisher_mcse = mcse_val,
       chi_sq = chi_res$statistic,
       chi_p = chi_res$p.value,
       cramers_v = cv_res
@@ -514,19 +518,39 @@ calculate_stats_by_question <- function(plot_df, split_var) {
   return(results_list)
 }
 
-# To use it:
 all_results <- calculate_stats_by_question(plot_data, "new_method")
 
 summary_stats <- do.call(rbind, lapply(all_results, function(x) {
   data.frame(
-    Question = x$question,
-    Fisher_P = round(x$fisher_p, 4),
-    Chi_Sq = round(x$chi_sq, 2),
-    Chi_P = round(x$chi_p, 4),
-    Cramers_V = round(x$cramers_v, 3),
+    Question     = x$question,
+    Fisher_P     = round(x$fisher_p, 4),
+    Fisher_MCSE  = round(x$fisher_mcse, 5),
+    Chi_Sq       = round(x$chi_sq, 2),
+    Chi_P        = round(x$chi_p, 4),
+    Cramers_V    = round(x$cramers_v, 3),
     Significance = ifelse(x$fisher_p < 0.05, "Yes*", "No")
   )
 }))
+
+
+#write.xlsx(summary_stats, "contingency_tests.xlsx")
+```
+
+### 3.5 Cronbach's alpha
+
+```{r}
+
+# Select Evaluative variables
+alpha_data <- data %>%
+  select(Q27_1, Q28_1, Q29_1)
+
+# Make missings missings
+alpha_data[alpha_data == -99] <- NA
+alpha_data[alpha_data == 999] <- NA
+
+# Cronbach's alpha
+alpha(alpha_data)
+
 ```
 
 ## 4. Plotting
