@@ -262,18 +262,16 @@ rho <- 0 # test against 0
 N <- 949 # number of included articles
 
 # Calculate t-values for the whole matrix
-# This applies your FPC formula to every cell
 t_matrix <- (cor_matrix - rho) / (sqrt((1 - cor_matrix^2) / (n_matrix - 2)) * sqrt((N - n_matrix) / (N - 1)))
 
 # Calculate p-values
-# df is also a matrix here (n - 2)
 p_matrix <- 2 * (1 - pt(abs(t_matrix), df = n_matrix - 2))
 
 # Clean up diagonals
 diag(p_matrix) <- NA
 diag(t_matrix) <- NA
 
-# Combine into a single data frame
+# Combine into single data frame
 results <- data.frame(
   Pair = melt(cor_matrix)$Var1,
   Var2 = melt(cor_matrix)$Var2,
@@ -286,12 +284,37 @@ results <- data.frame(
 results <- results %>%
   mutate(df = n - 2)
 
-# Filter out duplicates (the lower triangle of the matrix)
+# Filter out duplicates (only keep one diagonal)
 results <- results[as.numeric(results$Pair) < as.numeric(results$Var2), ]
+
+# Calculating confidence intervals
+conf_level <- 0.95
+alpha <- 1 - conf_level
+z_crit <- qnorm(1 - alpha/2)
+
+# Apply Fisher Z transformation and finite population correction factor-adjusted SE
+results <- results %>%
+    mutate(
+        # Fisher z transformation of the correlation
+        fisher_z = 0.5 * log((1 + Correlation) / (1 - Correlation)),
+        
+        # Standard Error for Fisher z with Finite Population Correction
+        se_fpc = (1 / sqrt(n - 3)) * sqrt((N - n) / (N - 1)),
+        
+        # Calculate Lower and Upper bounds in Z values
+        lower_z = fisher_z - (z_crit * se_fpc),
+        upper_z = fisher_z + (z_crit * se_fpc),
+        
+        # Back-transform to Correlation
+        CI_lower = (exp(2 * lower_z) - 1) / (exp(2 * lower_z) + 1),
+        CI_upper = (exp(2 * upper_z) - 1) / (exp(2 * upper_z) + 1)
+    ) %>%
+    # Clean up unnecessary columns
+    select(-fisher_z, -se_fpc, -lower_z, -upper_z)
 
 
 ### Scatterplots
-# NOTE: would need to put names in the plot for clarity
+# NOTE: would need to put names in the plot for clarity: maybe change names also for calculations above 
 pairs(~Q27_1 + Q28_1 + Q29_1, data = data, xlim = c(0,1), ylim = c(0,1))
 
 
