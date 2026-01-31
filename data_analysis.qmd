@@ -693,7 +693,8 @@ plot_combined_questions <- function(
             axis.text.y = element_text(hjust = 1, size = 9, face = "bold"),
             legend.position = if (show_legend) "right" else "none",
             panel.grid.major.y = element_blank(),
-            panel.grid.minor.y = element_blank()
+            panel.grid.minor.y = element_blank(),
+            panel.grid.minor.x = element_blank()
         )
 }
 ```
@@ -710,10 +711,10 @@ p_freq_selective_reporting <- plot_combined_questions(data = data,
                                combined_questions = c("perfmeas", "methods", "conditions"), # reversed order because of how ggplot handles coordflip, important that order is the same as legend specified in plotting function
                                combine_ab = FALSE,
                                title_plot = "Is at least one result reported for every condition/method/performance measure that was part of the simulations?",
-                               y_max = 100,
+                               y_max = 90,
                                wrap_width = 80)
 
-ggsave("Figure_2.png", plot = p_freq_selective_reporting, width = 10, height = 5, dpi = 300)
+ggsave("Figure_2.png", plot = p_freq_selective_reporting, width = 16.66*1.5, height = 6.65*1.5, units = "cm", dpi = 300)
 
 # --------------------------------
 
@@ -725,11 +726,11 @@ p_rationale_selective_reporting <- plot_combined_questions(data,
                                combined_questions = c("Q13", "Q10", "Q7"), # reversed order because of how ggplot handles coordflip, important that order is the same as legend specified in plotting function
                                sample_sizes = sample_sizes,
                                combine_ab = TRUE,
-                               title_plot = "Results weren't reported for all conditions/methods/performance measures because of...",
-                               y_max = 100,
+                               title_plot = "Results weren't reported for all conditions/methods/performance measures (in the body of the paper) because of...",
+                               y_max = 90,
                                wrap_width = 65)
 
-ggsave("Figure_3.png", plot = p_rationale_selective_reporting, width = 14.66*1.5, height = 13*1.5, units = "cm", dpi = 300)
+ggsave("Figure_3.png", plot = p_rationale_selective_reporting, width = 14.66*1.5, height = 14.5*1.5, units = "cm", dpi = 300)
 
 # -------------------------------
 
@@ -762,7 +763,7 @@ p_rationale_MCSE <- plot_combined_questions(data,
 p_rationale_missings <- p_rationale_missings + theme(plot.margin = margin(10, 10, 10, 30))
 p_rationale_MCSE <- p_rationale_MCSE + theme(plot.margin = margin(10, 10, 10, 30))
 
-arrange_fig5 <- ggarrange(p_rationale_missings, p_rationale_MCSE, nrow = 2, ncol = 1)
+arrange_fig5 <- ggarrange(p_rationale_missings, p_rationale_MCSE, nrow = 2, ncol = 1, labels = "AUTO")
 ggsave("Figure_5.png", plot = arrange_fig5, width = 14.66*1.5, height = 14.05*1.5, units = "cm", dpi = 300)
 
 
@@ -781,8 +782,10 @@ p_rationale_guidelines <- plot_combined_questions(data,
                         combine_ab = FALSE, 
                         colors = "#D55E00",
                         title_plot = "Why was no research guideline used?",
-                        y_max = 100,
+                        y_max = 80,
                         wrap_width = 80)
+
+p_rationale_guidelines <- p_rationale_guidelines + theme(plot.margin = margin(10, 10, 10, 30))
 
 # Panel B
 # Topic 2.7: Preregistration
@@ -793,8 +796,10 @@ p_rationale_prereg <- plot_combined_questions(data,
                         combine_ab = FALSE, 
                         colors = "#D55E00",
                         title_plot = "Why wasn't the simulation study preregistered?",
-                        y_max = 100,
+                        y_max = 80,
                         wrap_width = 80) 
+
+p_rationale_prereg <- p_rationale_prereg + theme(plot.margin = margin(6, 10, 10, 38))
 
 # Panel C
 # Topic 2.8: Open code
@@ -805,8 +810,10 @@ p_rationale_codesharing <- plot_combined_questions(data,
                         combine_ab = FALSE, 
                         colors = "#D55E00",
                         title_plot = "Why is not all code openly available?",
-                        y_max = 100,
+                        y_max = 80,
                         wrap_width = 80)
+
+p_rationale_codesharing <- p_rationale_codesharing + theme(plot.margin = margin(6, 10, 10, 36))
 
 
 # Panel D
@@ -818,21 +825,17 @@ p_rationale_reproducibility <- plot_combined_questions(data,
                         combine_ab = FALSE, 
                         colors = "#D55E00",
                         title_plot = "Which measures were taken for computational reproducibility?",
-                        y_max = 100,
+                        y_max = 80,
                         wrap_width = 40)
 
-p20 <- p20 + theme(plot.margin = margin(10, 10, 10, 30))
-p24 <- p24 + theme(plot.margin = margin(10, 10, 10, 30))
-p22 <- p22 + theme(plot.margin = margin(10, 10, 10, 30))
-p25 <- p25 + theme(plot.margin = margin(10, 10, 10, 30))
-p16 <- p16 + theme(plot.margin = margin(10, 10, 10, 30))
-p18 <- p18 + theme(plot.margin = margin(10, 10, 10, 30))
+p_rationale_reproducibility <- p_rationale_reproducibility + theme(plot.margin = margin(6, 10, 10, 30))
 
-ggarrange(p20, p24, p22, p25, nrow = 4, ncol = 1)
+arrange_fig6 <- ggarrange(p_rationale_guidelines,
+                          p_rationale_prereg,
+                          p_rationale_codesharing,
+                          p_rationale_reproducibility, nrow = 4, ncol = 1, labels = "AUTO")
 
-
-# Saving plots in high quality
-#ggsave("plot.png", plot = p20)
+ggsave("Figure_6.png", plot = arrange_fig6, width = 12*1.5, height = 20.05*1.5, units = "cm", dpi = 300)
 
 ```
 
