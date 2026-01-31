@@ -571,7 +571,7 @@ plot_combined_questions <- function(
         show_legend = length(combined_questions) > 1
 ) {
     
-    # ---- 1. Select & map (Unchanged) ----
+    # ---- 1. Select & map  ----
     if (combine_ab) {
         question_map <- tibble(
             combined = rep(combined_questions, each = 2),
@@ -587,7 +587,7 @@ plot_combined_questions <- function(
             arrange(combined, order)
     }
     
-    # ---- 2. Sample Sizes (Unchanged) ----
+    # ---- 2. Sample Sizes ----
     if (combine_ab) {
         plot_sample_sizes <- sample_sizes %>%
             inner_join(question_map, by = "question_group") %>%
@@ -600,7 +600,7 @@ plot_combined_questions <- function(
             select(combined, sample_size)
     }
     
-    # ---- 3. Count selections (Unchanged) ----
+    # ---- 3. Count selections ----
     long_data <- data %>%
         pivot_longer(
             cols = any_of(unique(meta_sel$question_code)),
@@ -625,7 +625,7 @@ plot_combined_questions <- function(
         group_by(combined, short_label, order) %>%
         summarise(freq = sum(freq), .groups = "drop")
     
-    # ---- 4. Percentages & factors (THE FIX IS HERE) ----
+    # ---- 4. Percentages & factors ----
     plot_data <- counts %>%
         left_join(plot_sample_sizes, by = "combined") %>% 
         mutate(
@@ -640,7 +640,7 @@ plot_combined_questions <- function(
             )
         )
     
-    # ---- 5. Plot (THE FIX IS HERE) ----
+    # ---- 5. Plot ----
     ggplot(
         plot_data,
         aes(
@@ -667,13 +667,14 @@ plot_combined_questions <- function(
             labels = setNames(legend_labels, combined_questions),
             name = "" 
         ) +
-        coord_flip() +
+        coord_flip(
+        ) +
         scale_y_continuous(
             limits = c(0, y_max),
+            breaks = seq(0, y_max + 10, by = 20),
             expand = expansion(mult = c(0, 0.15))
         ) +
         scale_x_discrete(
-            # DO NOT use limits = rev here; it conflicts with the manual factoring
             labels = ~ stringr::str_wrap(.x, wrap_width)
         ) +
         guides(
@@ -701,8 +702,9 @@ plot_combined_questions <- function(
 
 ```{r}
 
-# Figure 2 - Selective Reporting of Conditions, Methods, and Performance Measures
-p_rationale_selective_reporting <- plot_combined_questions(data = data,
+########## Figure 2 ##########
+#Selective Reporting of Conditions, Methods, and Performance Measures
+p_freq_selective_reporting <- plot_combined_questions(data = data,
                                meta,
                                sample_sizes = sample_sizes,
                                combined_questions = c("perfmeas", "methods", "conditions"), # reversed order because of how ggplot handles coordflip, important that order is the same as legend specified in plotting function
@@ -711,9 +713,14 @@ p_rationale_selective_reporting <- plot_combined_questions(data = data,
                                y_max = 100,
                                wrap_width = 80)
 
+ggsave("Figure_2.png", plot = p_freq_selective_reporting, width = 10, height = 5, dpi = 300)
 
-# Figure 3 - Rationale for Selective Reporting of Conditions, Methods, and Performance Measures
-p7_10_13 <- plot_combined_questions(data,
+# --------------------------------
+
+
+########## Figure 3 ###########
+# Rationale for Selective Reporting of Conditions, Methods, and Performance Measures
+p_rationale_selective_reporting <- plot_combined_questions(data,
                                meta,
                                combined_questions = c("Q13", "Q10", "Q7"), # reversed order because of how ggplot handles coordflip, important that order is the same as legend specified in plotting function
                                sample_sizes = sample_sizes,
@@ -722,34 +729,52 @@ p7_10_13 <- plot_combined_questions(data,
                                y_max = 100,
                                wrap_width = 65)
 
-ggsave("Figure_3.png", plot = p7_10_13, width = 10, height = 8.8, dpi = 300)
+ggsave("Figure_3.png", plot = p_rationale_selective_reporting, width = 14.66*1.5, height = 13*1.5, units = "cm", dpi = 300)
+
+# -------------------------------
 
 
-
+########## Figure 5 ############
+# Panel A
 # Topic 2.4: Missing values/nonconvergence
-p16 <- plot_combined_questions(data,
+p_rationale_missings <- plot_combined_questions(data,
                                meta,
                                combined_questions = "Q16",
                                sample_sizes = sample_sizes,
                                combine_ab = TRUE,
                                colors = "#D55E00",
-                               title_plot = "The number of missing values/nonconvergent iterations wasn't reported because...",
-                               y_max = 75,
+                               title_plot = "The number of missing values/nonconvergent iterations wasn't reported (for all methods and conditions) because of...",
+                               y_max = 70,
                                wrap_width = 60)
 
+# Panel B
 # Topic 2.5: MCSE
-p18 <- plot_combined_questions(data, 
+p_rationale_MCSE <- plot_combined_questions(data, 
                         meta, 
                         combined_questions = "Q18",
                         sample_sizes = sample_sizes,
                         combine_ab = TRUE, 
                         colors = "#D55E00",
                         title_plot = "MCSEs weren't reported (for all results) because of...",
-                        y_max = 75,
+                        y_max = 70,
                         wrap_width = 80) 
 
+p_rationale_missings <- p_rationale_missings + theme(plot.margin = margin(10, 10, 10, 30))
+p_rationale_MCSE <- p_rationale_MCSE + theme(plot.margin = margin(10, 10, 10, 30))
+
+arrange_fig5 <- ggarrange(p_rationale_missings, p_rationale_MCSE, nrow = 2, ncol = 1)
+ggsave("Figure_5.png", plot = arrange_fig5, width = 14.66*1.5, height = 14.05*1.5, units = "cm", dpi = 300)
+
+
+# ------------------------------
+
+
+
+
+########### Figure 6 #############
+# Panel A
 # Topic 2.6: Guidelines
-p20 <- plot_combined_questions(data, 
+p_rationale_guidelines <- plot_combined_questions(data, 
                         meta, 
                         combined_questions = "Q20",
                         sample_sizes = sample_sizes,
@@ -759,8 +784,9 @@ p20 <- plot_combined_questions(data,
                         y_max = 100,
                         wrap_width = 80)
 
+# Panel B
 # Topic 2.7: Preregistration
-p22 <- plot_combined_questions(data, 
+p_rationale_prereg <- plot_combined_questions(data, 
                         meta, 
                         combined_questions = "Q22",
                         sample_sizes = sample_sizes,
@@ -770,8 +796,9 @@ p22 <- plot_combined_questions(data,
                         y_max = 100,
                         wrap_width = 80) 
 
+# Panel C
 # Topic 2.8: Open code
-p24 <- plot_combined_questions(data, 
+p_rationale_codesharing <- plot_combined_questions(data, 
                         meta, 
                         combined_questions = "Q24",
                         sample_sizes = sample_sizes,
@@ -781,8 +808,10 @@ p24 <- plot_combined_questions(data,
                         y_max = 100,
                         wrap_width = 80)
 
-# Topic 2.9: Open code
-p25 <- plot_combined_questions(data, 
+
+# Panel D
+# Topic 2.9: Reproducibility
+p_rationale_reproducibility <- plot_combined_questions(data, 
                         meta, 
                         combined_questions = "Q25",
                         sample_sizes = sample_sizes,
@@ -800,7 +829,7 @@ p16 <- p16 + theme(plot.margin = margin(10, 10, 10, 30))
 p18 <- p18 + theme(plot.margin = margin(10, 10, 10, 30))
 
 ggarrange(p20, p24, p22, p25, nrow = 4, ncol = 1)
-ggarrange(p16, p18, nrow = 2, ncol = 1)
+
 
 # Saving plots in high quality
 #ggsave("plot.png", plot = p20)
