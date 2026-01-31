@@ -689,8 +689,10 @@ plot_combined_questions <- function(
         theme(
             plot.title = element_text(hjust = 0.5, size = 12, face = "bold"),
             axis.title.x = element_text(size = 8),
-            axis.text.y = element_text(hjust = 1, size = 9),
-            legend.position = if (show_legend) "right" else "none"
+            axis.text.y = element_text(hjust = 1, size = 9, face = "bold"),
+            legend.position = if (show_legend) "right" else "none",
+            panel.grid.major.y = element_blank(),
+            panel.grid.minor.y = element_blank()
         )
 }
 ```
@@ -703,7 +705,7 @@ plot_combined_questions <- function(
 p_rationale_selective_reporting <- plot_combined_questions(data = data,
                                meta,
                                sample_sizes = sample_sizes,
-                               combined_questions = c("perfmeas", "methods", "conditions"),
+                               combined_questions = c("perfmeas", "methods", "conditions"), # reversed order because of how ggplot handles coordflip, important that order is the same as legend specified in plotting function
                                combine_ab = FALSE,
                                title_plot = "Is at least one result reported for every condition/method/performance measure that was part of the simulations?",
                                y_max = 100,
@@ -713,13 +715,14 @@ p_rationale_selective_reporting <- plot_combined_questions(data = data,
 # Figure 3 - Rationale for Selective Reporting of Conditions, Methods, and Performance Measures
 p7_10_13 <- plot_combined_questions(data,
                                meta,
-                               combined_questions = c("Q7", "Q10", "Q13"),
+                               combined_questions = c("Q13", "Q10", "Q7"), # reversed order because of how ggplot handles coordflip, important that order is the same as legend specified in plotting function
                                sample_sizes = sample_sizes,
                                combine_ab = TRUE,
-                               title_plot = "Results weren't reported for all [Legend] because...",
+                               title_plot = "Results weren't reported for all conditions/methods/performance measures because of...",
                                y_max = 100,
-                               wrap_width = 80)
+                               wrap_width = 65)
 
+ggsave("Figure_3.png", plot = p7_10_13, width = 10, height = 8.8, dpi = 300)
 
 
 
@@ -741,7 +744,7 @@ p18 <- plot_combined_questions(data,
                         sample_sizes = sample_sizes,
                         combine_ab = TRUE, 
                         colors = "#D55E00",
-                        title_plot = "MCSE's weren't reported (for all results) because...",
+                        title_plot = "MCSEs weren't reported (for all results) because of...",
                         y_max = 75,
                         wrap_width = 80) 
 
