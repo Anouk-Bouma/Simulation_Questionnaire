@@ -6,7 +6,7 @@ editor: visual
 
 <!--# Hey bestie, before submitting the final version -> ctrl + f: 'NOTE' to check if all notes are evaluated and removed -->
 
-## Version Control
+## Dependency Management
 
 ```{r}
 renv::restore()
@@ -42,7 +42,24 @@ meta <- read.xlsx("question_labels.xlsx", sheet = "codebook")
 
 Here, some general functions objects and transformations are conducted that are necessary to run the other blocks of code. In principle, after running each of these general blocks, can be run separately from one another. NOTE: check if this works in the end.
 
-### 2.1 Sample sizes per question
+### 2.1 Data transformation
+
+Here, we add three variables to the dataset that combine the two selective reporting questions for conditions, methods, and performance measures.
+
+```{r}
+
+data <- data %>%
+  mutate(conditions = ifelse(is.na(Q6) & Q5 == 2, 0, Q6),
+         methods = ifelse(is.na(Q9) & Q8 == 2, 0, Q9),
+         perfmeas = ifelse(is.na(Q12) & Q11 == 2, 0, Q12)) %>%
+  # Making sure -99 values are NA
+  mutate(conditions = ifelse(conditions == -99, NA_real_, conditions),
+         methods = ifelse(methods == -99, NA_real_, methods),
+         perfmeas = ifelse(perfmeas == -99, NA_real_, perfmeas))
+
+```
+
+### 2.2 Sample sizes per question
 
 ```{r}
 
@@ -68,37 +85,17 @@ sample_sizes <- meta %>%
 
 ```
 
-### 2.2 Data transformation
-
-Here, we add three variables to the dataset that combine the two selective reporting questions for conditions, methods, and performance measures.
-
-```{r}
-
-data <- data %>%
-  mutate(conditions = ifelse(is.na(Q6) & Q5 == 2, 0, Q6),
-         methods = ifelse(is.na(Q9) & Q8 == 2, 0, Q9),
-         perfmeas = ifelse(is.na(Q12) & Q11 == 2, 0, Q12)) %>%
-  # Making sure -99 values are NA
-  mutate(conditions = ifelse(conditions == -99, NA_real_, conditions),
-         methods = ifelse(methods == -99, NA_real_, methods),
-         perfmeas = ifelse(perfmeas == -99, NA_real_, perfmeas))
-
-```
-
 ### 2.3 Objects that are used across codeblocks
 
 ```{r}
 
-# Setting a seed. Note that this seed is only used in simulations to calculate the p-value for Fisher's Exact test. One can check that the seed was set to the date seed was commited to Github
-set.seed(220126)
-
 # Vector of all nominal variables
 all_vars <- c("conditions", "Q7", "methods", "Q10", "perfmeas", "Q13", "Q14", "Q15", "Q16", "Q17", "Q18", "Q19", "Q20", "Q21", "Q22", "Q23", "Q24", "Q25")
 
-# Vector of all nominal variables that have an a and a b version
+# Vector of nominal variables that have an a and a b version
 vars_to_plot_ab <- c("Q7", "Q10", "Q13", "Q16", "Q18")
 
-# Vector of all nominal variables without versions
+# Vector of nominal variables without versions
 vars_to_plot_regular <- c("conditions", "methods", "perfmeas", "Q14", "Q15", "Q17", "Q19", "Q20", "Q21", "Q22", "Q23", "Q24", "Q25")
 
 ```
@@ -557,152 +554,163 @@ alpha(alpha_data)
 
 ### 4.1 One combined function for all plots
 
+In this block the function is defined that can be used to plot all general plots. For the plots that are split between a variable, another function is later defined.
+
 ```{r}
 plot_combined_questions <- function(
-  data,
-  metadata,
-  sample_sizes,
-  combined_questions,
-  legend_labels = c("Conditions", "Methods", "Performance Measures"),
-  title_plot = combined_questions,
-  combine_ab = FALSE,
-  wrap_width = 50,
-  colors = c("#0072B2", "#D55E00", "#F0E442"),
-  y_max = 100,
-  show_legend = length(combined_questions) > 1
+        data,
+        metadata,
+        sample_sizes,
+        combined_questions,
+        legend_labels = c("Performance Measures", "Methods", "Conditions"),
+        title_plot = combined_questions,
+        combine_ab = FALSE,
+        wrap_width = 50,
+        colors = c("#F0E442", "#D55E00", "#0072B2"),
+        y_max = 100,
+        show_legend = length(combined_questions) > 1
 ) {
-
-  # ---- 1. Select & (optionally) map a/b versions ----
-  if (combine_ab) {
-    question_map <- tibble(
-      combined = rep(combined_questions, each = 2),
-      question_group = paste0(rep(combined_questions, each = 2), c("a", "b"))
-    )
     
-    meta_sel <- metadata %>%
-      inner_join(question_map, by = "question_group") %>%
-      arrange(combined, order)
-  } else {
+    # ---- 1. Select & map (Unchanged) ----
+    if (combine_ab) {
+        question_map <- tibble(
+            combined = rep(combined_questions, each = 2),
+            question_group = paste0(rep(combined_questions, each = 2), c("a", "b"))
+        )
+        meta_sel <- metadata %>%
+            inner_join(question_map, by = "question_group") %>%
+            arrange(combined, order)
+    } else {
+        meta_sel <- metadata %>%
+            filter(question_group %in% combined_questions) %>%
+            mutate(combined = question_group) %>%
+            arrange(combined, order)
+    }
     
-    meta_sel <- metadata %>%
-      filter(question_group %in% combined_questions) %>%
-      mutate(combined = question_group) %>%
-      arrange(combined, order)
-  }
-
-  # ---- 2. Use the external sample_sizes object ----
-  # We filter the master sample_sizes for the questions we are plotting
-  # If it's an 'ab' combined question, we sum the n's.
-  if (combine_ab) {
-    plot_sample_sizes <- sample_sizes %>%
-      inner_join(question_map, by = "question_group") %>%
-      group_by(combined) %>%
-      summarise(sample_size = sum(n), .groups = "drop")
-  } else {
-    plot_sample_sizes <- sample_sizes %>%
-      filter(question_group %in% combined_questions) %>%
-      rename(combined = question_group, sample_size = n) %>%
-      select(combined, sample_size)
-  }
-  
-  # ---- 3. Count selections ----
-  long_data <- data %>%
-    pivot_longer(
-      cols = unique(meta_sel$question_code),
-      names_to = "question_code",
-      values_to = "value"
-    )
-
-  if (combine_ab) {
-    long_data <- long_data %>% filter(value == 1)
-  } else {
-    long_data <- long_data %>% filter(!is.na(value))
-  }
-
-  counts <- meta_sel %>%
-    select(combined, question_code, short_label, order, value) %>%
-    left_join(
-      long_data %>%
-        count(question_code, value, name = "freq"),
-      by = c("question_code", "value")
-    ) %>%
-    mutate(freq = replace_na(freq, 0)) %>%
-    group_by(combined, short_label, order) %>%
-    summarise(freq = sum(freq), .groups = "drop")
-
-  # ---- 4. Percentages & factors ----
-  plot_data <- counts %>%
-    left_join(plot_sample_sizes, by = "combined") %>% # Joining pre-calculated sizes
-    mutate(
-      pct = 100 * freq / sample_size,
-      label = sprintf("%.1f%% (%d)", pct, freq),
-      combined = factor(combined, levels = combined_questions),
-      short_label = factor(
-        short_label,
-        levels = meta_sel %>%
-          arrange(order) %>%
-          distinct(short_label) %>%
-          pull(short_label)
-      )
-    )
-
-  # ---- 5. Plot ----
-  ggplot(
-    plot_data,
-    aes(
-      x = fct_rev(short_label),
-      y = pct,
-      fill = combined
-    )
-  ) +
-    geom_col(
-      position = position_dodge(width = 0.8),
-      width = 0.8,
-      alpha = 0.8,
-      color = "black",
-      linewidth = 0.3
+    # ---- 2. Sample Sizes (Unchanged) ----
+    if (combine_ab) {
+        plot_sample_sizes <- sample_sizes %>%
+            inner_join(question_map, by = "question_group") %>%
+            group_by(combined) %>%
+            summarise(sample_size = sum(n), .groups = "drop")
+    } else {
+        plot_sample_sizes <- sample_sizes %>%
+            filter(question_group %in% combined_questions) %>%
+            rename(combined = question_group, sample_size = n) %>%
+            select(combined, sample_size)
+    }
+    
+    # ---- 3. Count selections (Unchanged) ----
+    long_data <- data %>%
+        pivot_longer(
+            cols = any_of(unique(meta_sel$question_code)),
+            names_to = "question_code",
+            values_to = "value"
+        )
+    
+    if (combine_ab) {
+        long_data <- long_data %>% filter(value == 1)
+    } else {
+        long_data <- long_data %>% filter(!is.na(value))
+    }
+    
+    counts <- meta_sel %>%
+        select(combined, question_code, short_label, order, value) %>%
+        left_join(
+            long_data %>%
+                count(question_code, value, name = "freq"),
+            by = c("question_code", "value")
+        ) %>%
+        mutate(freq = replace_na(freq, 0)) %>%
+        group_by(combined, short_label, order) %>%
+        summarise(freq = sum(freq), .groups = "drop")
+    
+    # ---- 4. Percentages & factors (THE FIX IS HERE) ----
+    plot_data <- counts %>%
+        left_join(plot_sample_sizes, by = "combined") %>% 
+        mutate(
+            pct = 100 * freq / sample_size,
+            label = sprintf("%.1f%% (%d)", pct, freq),
+            # Keep combined in original order for the legend
+            combined = factor(combined, levels = combined_questions),
+            # Reverse short_label levels so the first metadata item is the 'highest' factor level
+            short_label = factor(
+                short_label,
+                levels = rev(unique(meta_sel$short_label[order(meta_sel$order)]))
+            )
+        )
+    
+    # ---- 5. Plot (THE FIX IS HERE) ----
+    ggplot(
+        plot_data,
+        aes(
+            x = short_label, # Factor levels already reversed in Step 4
+            y = pct,
+            fill = combined
+        )
     ) +
-    geom_text(
-      aes(label = label),
-      position = position_dodge(width = 0.8),
-      hjust = -0.05,
-      size = 3.5
-    ) +
-    coord_flip() +
-    scale_y_continuous(
-      limits = c(0, y_max),
-      expand = expansion(mult = c(0, 0.1))
-    ) +
-    scale_fill_manual(
-      values = setNames(colors, combined_questions),
-      labels = setNames(legend_labels, combined_questions),
-      name = ""
-    ) +
-    scale_x_discrete(
-      labels = ~ stringr::str_wrap(.x, wrap_width)
-    ) +
-    labs(
-      x = NULL,
-      y = "Percentage",
-      title = if (!is.null(title_plot)) stringr::str_wrap(title_plot, wrap_width)
-    ) +
-    theme_bw() +
-    theme(
-      plot.title = element_text(hjust = 0.5, size = 12, face = "bold"),
-      axis.title.x = element_text(size = 8),
-      axis.text.y = element_text(hjust = 1, size = 9),
-      legend.position = if (show_legend) "right" else "none"
-    )
+        geom_col(
+            position = position_dodge(width = 0.8),
+            width = 0.8,
+            alpha = 0.8,
+            color = "black",
+            linewidth = 0.3
+        ) +
+        geom_text(
+            aes(label = label),
+            position = position_dodge(width = 0.8),
+            hjust = -0.1,
+            size = 3.5
+        ) +
+        scale_fill_manual(
+            values = setNames(colors, combined_questions),
+            labels = setNames(legend_labels, combined_questions),
+            name = "" 
+        ) +
+        coord_flip() +
+        scale_y_continuous(
+            limits = c(0, y_max),
+            expand = expansion(mult = c(0, 0.15))
+        ) +
+        scale_x_discrete(
+            # DO NOT use limits = rev here; it conflicts with the manual factoring
+            labels = ~ stringr::str_wrap(.x, wrap_width)
+        ) +
+        guides(
+            # Reverse the legend so the 'top' bar matches the 'top' legend item
+            fill = guide_legend(reverse = TRUE)
+        ) +
+        labs(
+            x = NULL,
+            y = "Percentage",
+            title = if (!is.null(title_plot)) stringr::str_wrap(title_plot, wrap_width)
+        ) +
+        theme_bw() +
+        theme(
+            plot.title = element_text(hjust = 0.5, size = 12, face = "bold"),
+            axis.title.x = element_text(size = 8),
+            axis.text.y = element_text(hjust = 1, size = 9),
+            legend.position = if (show_legend) "right" else "none"
+        )
 }
-
 ```
 
 ### 4.2 All Plots
 
 ```{r}
 
-# Plot for question 7, 10, and 13
-# NOTE: this plot is genereted later??
+# Figure 2 - Selective Reporting of Conditions, Methods, and Performance Measures
+p_rationale_selective_reporting <- plot_combined_questions(data = data,
+                               meta,
+                               sample_sizes = sample_sizes,
+                               combined_questions = c("perfmeas", "methods", "conditions"),
+                               combine_ab = FALSE,
+                               title_plot = "Is at least one result reported for every condition/method/performance measure that was part of the simulations?",
+                               y_max = 100,
+                               wrap_width = 80)
+
+
+# Figure 3 - Rationale for Selective Reporting of Conditions, Methods, and Performance Measures
 p7_10_13 <- plot_combined_questions(data,
                                meta,
                                combined_questions = c("Q7", "Q10", "Q13"),
@@ -711,6 +719,8 @@ p7_10_13 <- plot_combined_questions(data,
                                title_plot = "Results weren't reported for all [Legend] because...",
                                y_max = 100,
                                wrap_width = 80)
+
+
 
 
 # Topic 2.4: Missing values/nonconvergence
@@ -803,14 +813,7 @@ ggarrange(p16, p18, nrow = 2, ncol = 1)
 
 
 
-pconditions <- plot_combined_questions(data = data,
-                               meta,
-                               sample_sizes = sample_sizes,
-                               combined_questions = c("conditions", "methods", "perfmeas"),
-                               combine_ab = FALSE,
-                               title_plot = "Is at least one result reported for every condition/method/performance measure that was part of the simulations?",
-                               y_max = 100,
-                               wrap_width = 80)
+
 
 
 ## How many participants engaged in not reporting a result for any of the elements?
