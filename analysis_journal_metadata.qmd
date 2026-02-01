@@ -4,9 +4,7 @@ format: html
 editor: visual
 ---
 
-<!--# Hey bestie, before submitting the final version -> ctrl + f: 'NOTE' to check if all notes are evaluated and removed -->
-
-## Version Control
+## Dependency Management
 
 ```{r}
 renv::restore()
