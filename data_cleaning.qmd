@@ -4,9 +4,7 @@ format: html
 editor: visual
 ---
 
-<!--# Hey bestie, before submitting the final version -> ctrl + f: 'NOTE' to check if all notes are evaluated and removed -->
-
-## Version Control
+## Dependency Management
 
 ```{r}
 renv::restore()
@@ -109,8 +107,6 @@ text_list <- map(text_cols, function(col) {
 
 Before going to the next step, the open answers were all anonymized by hand in Excel. Any part of an open answer that allows for an individual to be identified is replaced by '\[redacted\]'. This step does not change anything in terms of reproducibility of the other steps in this script.
 
-<!--# NOTE: Maybe split into a new script from here -->
-
 ## Load anonymized dataset to work with
 
 ```{r}
@@ -141,7 +137,7 @@ data <- data %>%
 
 
 ####
-# Addition of new answer categories based on themes found in open answers (NOTE see codebook for details)
+# Addition of new answer categories based on themes found in open answers (see codebook for details)
 # For participants where their answer option in the 'other' answer option is assigned to a new category, their score for the option 'other' is recoded as a 8 (see codebook). 
 # Note that coding 'other' answers to 8 is done per newly added answer category, not per question to keep the code as easily interpretable as possible.
 
