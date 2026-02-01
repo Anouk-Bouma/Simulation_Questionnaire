@@ -1160,9 +1160,10 @@ plot_combined_questions_grouped <- function(
     mutate(
       pct = ifelse(is.na(sample_size) | sample_size == 0, 0, 100 * freq / sample_size),
       label = sprintf("%.1f%% (%d)", pct, freq),
+      !!sym(split_var) := factor(!!sym(split_var), levels = rev(unique(!!sym(split_var)))), # ensures splitvar is a factor
       short_label = factor(
         short_label, 
-        levels = meta_sel %>% arrange(order) %>% distinct(short_label) %>% pull(short_label)
+        levels = rev(meta_sel %>% arrange(order) %>% distinct(short_label) %>% pull(short_label))
       )
     )
 
@@ -1170,7 +1171,7 @@ plot_combined_questions_grouped <- function(
   ggplot(
     plot_data, 
     aes(
-      x = fct_rev(short_label), 
+      x = short_label, 
       y = pct, 
       fill = .data[[split_var]]
       )
@@ -1191,14 +1192,18 @@ plot_combined_questions_grouped <- function(
     coord_flip(
     ) +
     scale_y_continuous(
-      limits = c(0, y_max), 
+      limits = c(0, y_max),
+      breaks = seq(0, y_max, by = 20),
       expand = expansion(mult = c(0, 0.2))
       ) +
     scale_fill_manual(
       values = colors, 
-      labels = legend_labels, 
+      labels = legend_labels,
+      breaks = rev(levels(plot_data[[split_var]])),
       name = ""
       ) +
+    #guides(fill = guide_legend(reverse = TRUE)
+      #) +
     scale_x_discrete(
       labels = ~ stringr::str_wrap(.x, wrap_width)
       ) +
@@ -1211,7 +1216,10 @@ plot_combined_questions_grouped <- function(
     ) +
     theme(plot.title = element_text(hjust = 0.5, size = 10, face = "bold"),
           axis.text.y = element_text(face = "bold"),
-          legend.position = "bottom", plot.margin = margin(10, 10, 10, 30)
+          legend.position = "bottom", plot.margin = margin(10, 10, 10, 30),
+          panel.grid.major.y = element_blank(),
+          panel.grid.minor.y = element_blank(),
+          panel.grid.minor.x = element_blank()
           )
 }
 ```
@@ -1262,7 +1270,7 @@ plot_combined_questions_grouped(
     combine_ab = FALSE,
     combined_questions = c("Q12"),
     legend_labels = c("New method compared", "New method not compared", "Existing method(s)", "Other"),
-    colors = c("red", "blue", "grey", "orange"),
+    colors = c("red","blue","grey","orange"),
     split_var = "Q2" #split by aim
 )
 ```
