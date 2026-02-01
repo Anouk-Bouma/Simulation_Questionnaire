@@ -1070,7 +1070,7 @@ plot_combined_questions_grouped <- function(
   metadata,
   combined_questions,
   split_var = NULL,
-  legend_labels = c("Neutral", "Developer"), 
+  legend_labels = c("Neutral", "Non-neutral"), 
   title_plot = combined_questions,
   combine_ab = FALSE,
   wrap_width = 50,
@@ -1167,19 +1167,52 @@ plot_combined_questions_grouped <- function(
     )
 
   # ---- 5. Plot ----
-  # NOTE: clear this mess up:
-  ggplot(plot_data, aes(x = fct_rev(short_label), y = pct, fill = .data[[split_var]])) +
-    geom_col(position = position_dodge(width = 0.8), width = 0.8, alpha = 0.8, color = "black", linewidth = 0.3) +
-    geom_text(aes(label = label), position = position_dodge(width = 0.8), hjust = -0.1, size = 3) +
-    coord_flip() +
-    scale_y_continuous(limits = c(0, y_max), expand = expansion(mult = c(0, 0.2))) +
-    scale_fill_manual(values = colors, labels = legend_labels, name = "") +
-    scale_x_discrete(labels = ~ stringr::str_wrap(.x, wrap_width)) +
-    labs(x = NULL, y = "Percentage", title = if (!is.null(title_plot)) stringr::str_wrap(title_plot, wrap_width)) +
-    theme_bw() +
+  ggplot(
+    plot_data, 
+    aes(
+      x = fct_rev(short_label), 
+      y = pct, 
+      fill = .data[[split_var]]
+      )
+    ) +
+    geom_col(
+      position = position_dodge(width = 0.8), 
+      width = 0.8, 
+      alpha = 0.8, 
+      color = "black", 
+      linewidth = 0.3
+      ) +
+    geom_text(
+      aes(label = label), 
+      position = position_dodge(width = 0.8), 
+      hjust = -0.1, 
+      size = 3
+      ) +
+    coord_flip(
+    ) +
+    scale_y_continuous(
+      limits = c(0, y_max), 
+      expand = expansion(mult = c(0, 0.2))
+      ) +
+    scale_fill_manual(
+      values = colors, 
+      labels = legend_labels, 
+      name = ""
+      ) +
+    scale_x_discrete(
+      labels = ~ stringr::str_wrap(.x, wrap_width)
+      ) +
+    labs(
+      x = NULL, 
+      y = "Percentage", 
+      title = if (!is.null(title_plot)) stringr::str_wrap(title_plot, wrap_width)
+      ) +
+    theme_bw(
+    ) +
     theme(plot.title = element_text(hjust = 0.5, size = 10, face = "bold"),
           axis.text.y = element_text(face = "bold"),
-          legend.position = "bottom", plot.margin = margin(10, 10, 10, 30))
+          legend.position = "bottom", plot.margin = margin(10, 10, 10, 30)
+          )
 }
 ```
 
@@ -1228,6 +1261,7 @@ plot_combined_questions_grouped(
     metadata = meta,
     combine_ab = FALSE,
     combined_questions = c("Q12"),
+    legend_labels = c("New method compared", "New method not compared", "Existing method(s)", "Other"),
     colors = c("red", "blue", "grey", "orange"),
     split_var = "Q2" #split by aim
 )
