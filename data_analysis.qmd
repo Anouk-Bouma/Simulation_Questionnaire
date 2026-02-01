@@ -4,9 +4,9 @@ format: html
 editor: visual
 ---
 
-<!--# Hey bestie, before submitting the final version -> ctrl + f: 'NOTE' to check if all notes are evaluated and removed -->
-
 ## Dependency Management
+
+To run the code, first run the following codeblock.
 
 ```{r}
 renv::restore()
@@ -41,7 +41,7 @@ meta <- read.xlsx("question_labels.xlsx", sheet = "codebook")
 
 ## 2. General functions and objects
 
-Here, some general functions objects and transformations are conducted that are necessary to run the other blocks of code. In principle, after running each of these general blocks, can be run separately from one another. NOTE: check if this works in the end.
+Here, some general functions objects and transformations are conducted that are necessary to run the other blocks of code. In principle, after running each of these general blocks, can be run separately from one another.
 
 ### 2.1 Data transformation
 
@@ -146,7 +146,6 @@ create_question_table <- function(data, metadata, sample_sizes) {
       # Identify columns in participant data for this question and extract
       option_cols <- meta_group$question_code
       subdata <- data[, option_cols]
-      #answered <- rowSums(!is.na(subdata)) > 0 #NOTE: delete line?
 
       tbl <- subdata %>%
         summarise(across(all_of(option_cols), 
@@ -212,7 +211,7 @@ create_question_table <- function(data, metadata, sample_sizes) {
     arrange(question_order, order) %>%
     select(-order)
 
-  # ---- NEW: calculate Percentage at the very end ----
+  # ---- calculate Percentage at the very end ----
   result <- result %>%
     mutate(
       Percentage = ifelse(
@@ -267,7 +266,21 @@ for (i in seq_along(vars)) {
 
 descriptives_continues
 
-# NOTE: add saving function here too?
+################ Other descriptives #####################
+
+## How many participants engaged in not reporting a result for any of the elements?
+data_not_reported <- data %>%
+  filter(conditions == 0 | methods == 0 | perfmeas == 0)
+
+any_not_reported <- nrow(data_not_reported)/221
+
+## How many participants engaged in split reporting a results for any of the elements?
+data_split_reported <- data %>%
+  filter(conditions == 2 | methods == 2 | perfmeas == 2)
+
+any_split_reported <- nrow(data_split_reported)/221
+
+total_any_selective_reported <- (nrow(data_not_reported) + nrow(data_split_reported))/221
   
 ```
 
@@ -352,10 +365,6 @@ results <- results %>%
 # Saving the results
 #write.xlsx(results, "correlation_results.xlsx")
 
-### Scatterplots
-# NOTE: would need to put names in the plot for clarity: maybe change names also for calculations above 
-pairs(~Q27_1 + Q28_1 + Q29_1, data = data, xlim = c(0,1), ylim = c(0,1))
-
 
 ```
 
@@ -378,7 +387,7 @@ alpha(alpha_data)
 
 ## 4. Plotting
 
-### 4.1 One combined function for all plots
+### 4.1 Function non-splitted plots
 
 In this block the function is defined that can be used to plot all general plots. For the plots that are split between a variable, another function is later defined.
 
@@ -470,7 +479,7 @@ plot_combined_questions <- function(
     ggplot(
         plot_data,
         aes(
-            x = short_label, # Factor levels already reversed in Step 4
+            x = short_label,
             y = pct,
             fill = combined
         )
@@ -504,7 +513,6 @@ plot_combined_questions <- function(
             labels = ~ stringr::str_wrap(.x, wrap_width)
         ) +
         guides(
-            # Reverse the legend so the 'top' bar matches the 'top' legend item
             fill = guide_legend(reverse = TRUE)
         ) +
         labs(
@@ -525,7 +533,7 @@ plot_combined_questions <- function(
 }
 ```
 
-### 4.2 All Plots
+### 4.2 Plots non-splitted
 
 ```{r}
 
@@ -572,7 +580,7 @@ p_rationale_missings <- plot_combined_questions(data,
                                colors = "#D55E00",
                                title_plot = "The number of missing values/nonconvergent iterations wasn't reported for all methods and conditions (in the body of the paper) because of...",
                                y_max = 70,
-                               wrap_width = 60)
+                               wrap_width = 80)
 
 # Panel B
 # Topic 2.5: MCSE
@@ -665,29 +673,7 @@ ggsave("Figure_6.png", plot = arrange_fig6, width = 12*1.5, height = 20.05*1.5, 
 
 ```
 
-### 4.3 Combined Plot Reporting (\@ Lieke dit blok mag je overslaan)
-
-<!--# This block should go to analyses somewhere and must be cleaned up -->
-
-```{r}
-
-## How many participants engaged in not reporting a result for any of the elements?
-data_not_reported <- data %>%
-  filter(conditions == 0 | methods == 0 | perfmeas == 0)
-
-any_not_reported <- nrow(data_not_reported)/221
-
-## How many participants engaged in split reporting a results for any of the elements?
-data_split_reported <- data %>%
-  filter(conditions == 2 | methods == 2 | perfmeas == 2)
-
-any_split_reported <- nrow(data_split_reported)/221
-
-total_any_selective_reported <- (nrow(data_not_reported) + nrow(data_split_reported))/221
-
-```
-
-### 4.4 Plots split by variable
+### 4.3 Function Plots split by variable
 
 ```{r}
 
@@ -828,8 +814,6 @@ plot_combined_questions_grouped <- function(
       breaks = rev(levels(plot_data[[split_var]])),
       name = ""
       ) +
-    #guides(fill = guide_legend(reverse = TRUE)
-      #) +
     scale_x_discrete(
       labels = ~ stringr::str_wrap(.x, wrap_width)
       ) +
@@ -851,7 +835,7 @@ plot_combined_questions_grouped <- function(
 }
 ```
 
-### 4.5 Plot a question
+### 4.4 Plotting splitted plots
 
 ```{r}
 # Generating a PDF with plots split by new_method
@@ -891,6 +875,10 @@ ggsave("Plots_split_neutrality.pdf", multipage_plot, width = 21*1.5, height = 29
 
 ########## Plots split by aim ##################
 
+# Three participants that indicated 'none of the above applies' for Q2 are not used in plot
+data_without_other <- data %>%
+  filter(Q2 != 4)
+
 plot_list_aim <- list()
 
 for (i in 1:length(all_vars)) {
@@ -902,12 +890,12 @@ for (i in 1:length(all_vars)) {
     pull(item)
 
 p <- plot_combined_questions_grouped(
-    data = data,
+    data = data_without_other,
     metadata = meta,
     combine_ab = all_vars[i] %in% vars_to_plot_ab,
     combined_questions = all_vars[i],
-    legend_labels = c("New method compared", "New method not compared", "Existing method(s)", "Other"),
-    colors = c("red","blue","grey","orange"),
+    legend_labels = c("New method compared", "New method not compared", "Existing method(s)"),
+    colors = c("#0072B2", "#D55E00", "#F0E442" ),
     title_plot = ifelse(all_vars[i] == "conditions", 
                         "Q5/Q6: Is at least one result reported for every condition that was part of the simulations?", 
                         ifelse(all_vars[i] == "methods", 
@@ -926,7 +914,7 @@ multipage_plot <- marrangeGrob(plot_list_aim, nrow = 2, ncol = 1)
 ggsave("Plots_split_aim.pdf", multipage_plot, width = 21*1.3, height = 29.7*1.3, units = "cm")
 ```
 
-## Figure 4
+### 4.5 Figure 4
 
 ```{r}
 
