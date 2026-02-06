@@ -6,7 +6,27 @@ editor: visual
 
 ## Dependency Management
 
-To run the code, first run the following codeblock.
+Session info:
+
+```         
+R version 4.5.2 (2025-10-31 ucrt) 
+Platform: x86_64-w64-mingw32/x64 
+Running under: Windows 10 x64 (build 19045)  
+Matrix products: default   
+  LAPACK version 3.12.1  
+
+locale: 
+[1] LC_COLLATE=Dutch_Netherlands.utf8  
+[2] LC_CTYPE=Dutch_Netherlands.utf8    
+[3] LC_MONETARY=Dutch_Netherlands.utf8 
+[4] LC_NUMERIC=C                       
+[5] LC_TIME=Dutch_Netherlands.utf8      
+
+time zone: Europe/Amsterdam tzcode 
+source: internal
+```
+
+To run the code, first run the following codeblock to attach the packages needed.
 
 ```{r}
 renv::restore()
