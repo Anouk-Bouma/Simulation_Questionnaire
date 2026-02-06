@@ -280,8 +280,10 @@ data_split_reported <- data %>%
 
 any_split_reported <- nrow(data_split_reported)/221
 
-total_any_selective_reported <- (nrow(data_not_reported) + nrow(data_split_reported))/221
-  
+any_selective <- data %>%
+  filter(conditions == 0 | methods == 0 | perfmeas == 0 | conditions == 2 | methods == 2 | perfmeas == 2)
+
+any_selective_reported <- nrow(any_selective)/221  
 ```
 
 ### 3.3 Correlations
